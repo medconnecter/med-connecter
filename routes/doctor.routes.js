@@ -248,7 +248,7 @@ router.get('/', DoctorHandler.getDoctors);
  *       500:
  *         description: Server error
  */
-router.get('/profile', AuthMiddleware.authenticate, DoctorHandler.getDoctorProfile);
+router.get('/profile', AuthMiddleware.authenticate, AuthMiddleware.authorize(['doctor', 'admin']), DoctorHandler.getDoctorProfile);
 
 /**
  * @swagger
@@ -899,7 +899,7 @@ router.get('/availability', DoctorHandler.getAvailability);
  *       500:
  *         description: Server error
  */
-router.put('/availability', AuthMiddleware.authenticate, AuthMiddleware.authorize(['doctor']), DoctorHandler.updateAvailability);
+router.put('/availability', AuthMiddleware.authenticate, AuthMiddleware.authorize(['doctor', 'admin']), DoctorHandler.updateAvailability);
 
 /**
  * @swagger
@@ -1080,7 +1080,7 @@ router.post('/register', AuthMiddleware.authenticate, DoctorHandler.registerDoct
  *       500:
  *         description: Server error
  */
-router.post('/unavailability', AuthMiddleware.authenticate, AuthMiddleware.authorize(['doctor']), DoctorHandler.addUnavailability);
+router.post('/unavailability', AuthMiddleware.authenticate, AuthMiddleware.authorize(['doctor', 'admin']), DoctorHandler.addUnavailability);
 
 /**
  * @swagger
@@ -1110,7 +1110,7 @@ router.post('/unavailability', AuthMiddleware.authenticate, AuthMiddleware.autho
  *       500:
  *         description: Server error
  */
-router.delete('/unavailability', AuthMiddleware.authenticate, AuthMiddleware.authorize(['doctor']), DoctorHandler.removeUnavailability);
+router.delete('/unavailability', AuthMiddleware.authenticate, AuthMiddleware.authorize(['doctor', 'admin']), DoctorHandler.removeUnavailability);
 
 /**
  * @swagger

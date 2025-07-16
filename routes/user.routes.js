@@ -72,6 +72,7 @@ const upload = multer({
  */
 router.get('/profile', 
   AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['patient', 'admin']),
   UserHandler.getProfile
 );
 
@@ -112,6 +113,7 @@ router.get('/profile',
  */
 router.put('/profile', 
   AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['patient', 'admin']),
   [
     body('firstName').optional().isString().withMessage('First name must be a string'),
     body('lastName').optional().isString().withMessage('Last name must be a string'),
@@ -154,6 +156,7 @@ router.put('/profile',
  */
 router.post('/profile/picture',
   AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['patient', 'admin']),
   upload.single('picture'),
   UserHandler.updateProfilePicture
 );
