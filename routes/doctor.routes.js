@@ -175,6 +175,32 @@ const upload = multer({
  *           type: integer
  *           default: 10
  *         description: Number of items per page
+ *       - in: query
+ *         name: language
+ *         schema:
+ *           type: string
+ *         description: Filter by language (comma-separated for multiple)
+ *       - in: query
+ *         name: gender
+ *         schema:
+ *           type: string
+ *           enum: [male, female, other]
+ *         description: Filter by gender
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *         description: Minimum consultation fee
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *         description: Maximum consultation fee
+ *       - in: query
+ *         name: rating
+ *         schema:
+ *           type: number
+ *         description: Filter by minimum rating (e.g., 4, 5, 3, etc.)
  *     responses:
  *       200:
  *         description: List of doctors retrieved successfully
@@ -757,16 +783,16 @@ router.get('/specialties', DoctorHandler.getSpecialties);
  *     tags:
  *       - Doctors
  *     summary: Get doctor's availability
- *     description: Get the availability schedule for a specific doctor
+ *     description: Get the availability schedule for a specific doctor or all doctors if no doctorId is provided
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: doctorId
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
- *         description: Doctor ID
+ *         description: Doctor ID (optional - if not provided, returns availability for all doctors)
  *       - in: query
  *         name: startDate
  *         schema:
@@ -779,6 +805,32 @@ router.get('/specialties', DoctorHandler.getSpecialties);
  *           type: string
  *           format: date
  *         description: End date for availability check
+ *       - in: query
+ *         name: language
+ *         schema:
+ *           type: string
+ *         description: Filter by language (comma-separated for multiple)
+ *       - in: query
+ *         name: gender
+ *         schema:
+ *           type: string
+ *           enum: [male, female, other]
+ *         description: Filter by gender
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *         description: Minimum consultation fee
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *         description: Maximum consultation fee
+ *       - in: query
+ *         name: rating
+ *         schema:
+ *           type: number
+ *         description: Filter by minimum rating (e.g., 4, 5, 3, etc.)
  *     responses:
  *       200:
  *         description: Availability schedule retrieved successfully
@@ -792,6 +844,12 @@ router.get('/specialties', DoctorHandler.getSpecialties);
  *                   items:
  *                     type: object
  *                     properties:
+ *                       doctorId:
+ *                         type: string
+ *                         description: Doctor ID (only present when multiple doctors are returned)
+ *                       doctorName:
+ *                         type: string
+ *                         description: Doctor name (only present when multiple doctors are returned)
  *                       day:
  *                         type: string
  *                         enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
@@ -811,7 +869,7 @@ router.get('/specialties', DoctorHandler.getSpecialties);
  *       401:
  *         description: Unauthorized
  *       404:
- *         description: Doctor not found
+ *         description: Doctor not found (only when specific doctorId is provided)
  *       500:
  *         description: Server error
  */
@@ -973,61 +1031,6 @@ router.put('/availability', AuthMiddleware.authenticate, AuthMiddleware.authoriz
  */
 router.post('/verify-registration', AuthMiddleware.authenticate, DoctorHandler.verifyRegistrationNumber);
 
-/**
- * @swagger
- * /api/v1/doctors/profile:
- *   post:
- *     tags:
- *       - Doctors
- *     summary: Create or update doctor profile
- *     description: Create a new doctor profile or update an existing one with registration number
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - registrationNumber
- *             properties:
- *               registrationNumber:
- *                 type: string
- *                 description: Doctor's registration number (9 digits)
- *                 example: "123456789"
- *     responses:
- *       200:
- *         description: Doctor profile created/updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 doctor:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: string
- *                     registrationNumber:
- *                       type: string
- *                     status:
- *                       type: string
- *                       enum: [pending, approved, rejected]
- *       400:
- *         description: Invalid request data
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden - User is not a doctor
- *       500:
- *         description: Server error
- */
-router.post('/register', AuthMiddleware.authenticate, DoctorHandler.registerDoctor);
 
 /**
  * @swagger

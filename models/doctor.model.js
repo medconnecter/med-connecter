@@ -39,6 +39,14 @@ const doctorSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other'],
+    required: false
+  },
+  languages: [{
+    type: String
+  }],
   education: [{
     degree: {
       type: String,
@@ -170,12 +178,18 @@ const doctorSchema = new mongoose.Schema({
   totalReviews: {
     type: Number,
     default: 0
+  },
+  slotDurationMinutes: {
+    type: Number,
+    default: 15,
+    min: 5,
+    max: 120,
+    description: 'Duration in minutes for each patient slot.'
   }
 }, {
   timestamps: true
 });
 
-// Add indexes
 doctorSchema.index({ userId: 1 });
 doctorSchema.index({ registrationNumber: 1 }, { unique: true });
 doctorSchema.index({ specializations: 1 });

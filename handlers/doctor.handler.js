@@ -508,7 +508,7 @@ class DoctorHandler {
   // Get all doctors
   static async getDoctors(req, res) {
     try {
-      const { specialization, verified, page = 1, limit = 10 } = req.query;
+      const { specialization, verified, page = 1, limit = 10, gender, language, minPrice, maxPrice, rating } = req.query;
       const query = {};
 
       if (specialization) {
@@ -517,6 +517,26 @@ class DoctorHandler {
 
       if (verified) {
         query.verificationStatus = verified === 'true' ? 'verified' : 'pending';
+      }
+
+      if (gender) {
+        query.gender = gender;
+      }
+
+      if (language) {
+        // Support comma-separated values
+        const langs = language.split(',').map(l => l.trim());
+        query.languages = { $in: langs };
+      }
+
+      if (minPrice || maxPrice) {
+        query.consultationFee = {};
+        if (minPrice) query.consultationFee.$gte = Number(minPrice);
+        if (maxPrice) query.consultationFee.$lte = Number(maxPrice);
+      }
+
+      if (rating) {
+        query.rating = { $gte: Number(rating) };
       }
 
       const doctors = await Doctor.find(query)
@@ -590,32 +610,83 @@ class DoctorHandler {
   // Get doctor availability
   static async getAvailability(req, res) {
     try {
-      const { doctorId, startDate, endDate } = req.query;
-      const doctor = await Doctor.findById(doctorId);
-      if (!doctor) {
-        return res.status(404).json({ success: false, error: 'Doctor not found' });
-      }
+      const { doctorId, startDate, endDate, gender, language, minPrice, maxPrice, rating } = req.query;
+      
+      // Validate date parameters
       if (!startDate || !endDate) {
         return res.status(400).json({ success: false, error: 'startDate and endDate are required' });
       }
+      
       const start = new Date(startDate);
       const end = new Date(endDate);
       if (isNaN(start) || isNaN(end) || start > end) {
         return res.status(400).json({ success: false, error: 'Invalid date range' });
       }
-      const results = [];
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().slice(0, 10);
-        const weekday = d.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-        const recurring = doctor.availability.find(a => a.day === weekday);
-        let slots = recurring ? [...recurring.slots] : [];
-        const unavail = doctor.unavailability.find(u => u.date.toISOString().slice(0,10) === dateStr);
-        if (unavail) {
-          slots = slots.filter(slot => !unavail.slots.some(uSlot => slot.startTime < uSlot.endTime && slot.endTime > uSlot.startTime));
+
+      let doctors = [];
+      
+      if (doctorId) {
+        // Get availability for specific doctor
+        const doctor = await Doctor.findById(doctorId).populate('userId', 'firstName lastName');
+        if (!doctor) {
+          return res.status(404).json({ success: false, error: 'Doctor not found' });
         }
-        results.push({ date: dateStr, slots });
+        doctors = [doctor];
+      } else {
+        // Get availability for all doctors
+        const query = { status: 'active' };
+        if (gender) {
+          query.gender = gender;
+        }
+        if (language) {
+          const langs = language.split(',').map(l => l.trim());
+          query.languages = { $in: langs };
+        }
+        if (minPrice || maxPrice) {
+          query.consultationFee = {};
+          if (minPrice) query.consultationFee.$gte = Number(minPrice);
+          if (maxPrice) query.consultationFee.$lte = Number(maxPrice);
+        }
+        if (rating) {
+          query.rating = { $gte: Number(rating) };
+        }
+        doctors = await Doctor.find(query).populate('userId', 'firstName lastName');
       }
-      res.json({ success: true, availability: results });
+
+      const allAvailability = [];
+
+      for (const doctor of doctors) {
+        const doctorAvailability = [];
+        
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const dateStr = d.toISOString().slice(0, 10);
+          const weekday = d.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+          const recurring = doctor.availability.find(a => a.day === weekday);
+          let slots = recurring ? [...recurring.slots] : [];
+          
+          const unavail = doctor.unavailability.find(u => u.date.toISOString().slice(0,10) === dateStr);
+          if (unavail) {
+            slots = slots.filter(slot => !unavail.slots.some(uSlot => slot.startTime < uSlot.endTime && slot.endTime > uSlot.startTime));
+          }
+          
+          const availabilityEntry = {
+            date: dateStr,
+            slots
+          };
+          
+          // Add doctor info only when returning multiple doctors
+          if (!doctorId) {
+            availabilityEntry.doctorId = doctor._id;
+            availabilityEntry.doctorName = `${doctor.userId.firstName} ${doctor.userId.lastName}`;
+          }
+          
+          doctorAvailability.push(availabilityEntry);
+        }
+        
+        allAvailability.push(...doctorAvailability);
+      }
+
+      res.json({ success: true, availability: allAvailability });
     } catch (error) {
       logger.error('Get availability error:', error);
       res.status(500).json({ success: false, error: 'Failed to fetch availability' });

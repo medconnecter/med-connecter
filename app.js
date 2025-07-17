@@ -91,6 +91,7 @@ if (process.env.NODE_ENV === 'production') {
 
 app.use(compression());
 
+
 // CORS configuration
 const corsOptions = {
   origin: ['http://localhost:8085', 'http://127.0.0.1:8085'],
@@ -100,8 +101,9 @@ const corsOptions = {
   maxAge: 86400 // 24 hours
 };
 
+
 // Apply CORS middleware
-app.use(cors(corsOptions));
+app.use(cors());
 
 // Swagger configuration
 const swaggerOptions = {
@@ -202,6 +204,7 @@ app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/chats', chatRoutes);
 app.use('/api/v1/video', videoRoutes);
 app.use('/api/v1/admin', adminRoutes);
+
 
 // Error handling middleware
 app.use(errorHandler);
