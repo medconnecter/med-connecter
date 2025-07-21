@@ -126,6 +126,36 @@ const router = express.Router();
  *               type: string
  *             postalCode:
  *               type: string
+ *         professionalRegistry:
+ *           type: string
+ *           description: Professional registry or association (if applicable)
+ *         chamberOfCommerceNumber:
+ *           type: string
+ *           description: Chamber of Commerce number (if applicable)
+ *         iban:
+ *           type: string
+ *           description: IBAN for payments
+ *         vatNumber:
+ *           type: string
+ *           description: VAT number (if applicable)
+ *         hasLiabilityInsurance:
+ *           type: boolean
+ *           description: Whether the doctor has valid professional liability insurance
+ *         liabilityInsurancePolicyNumber:
+ *           type: string
+ *           description: Policy number of liability insurance
+ *         liabilityInsuranceInsurer:
+ *           type: string
+ *           description: Insurer of liability insurance
+ *         liabilityInsuranceDocument:
+ *           type: string
+ *           description: S3 URL for uploaded liability insurance document
+ *         hasCertificateOfConduct:
+ *           type: boolean
+ *           description: Whether the doctor has a certificate of conduct (VOG)
+ *         certificateOfConductDocument:
+ *           type: string
+ *           description: S3 URL for uploaded certificate of conduct
  */
 
 // Configure multer for memory storage
@@ -463,6 +493,36 @@ router.get('/profile', AuthMiddleware.authenticate, AuthMiddleware.authorize(['d
  *                             type: string
  *                             format: time
  *                             description: Slot end time (HH:mm)
+ *               professionalRegistry:
+ *                 type: string
+ *                 description: Professional registry or association (if applicable)
+ *               chamberOfCommerceNumber:
+ *                 type: string
+ *                 description: Chamber of Commerce number (if applicable)
+ *               iban:
+ *                 type: string
+ *                 description: IBAN for payments
+ *               vatNumber:
+ *                 type: string
+ *                 description: VAT number (if applicable)
+ *               hasLiabilityInsurance:
+ *                 type: boolean
+ *                 description: Whether the doctor has valid professional liability insurance
+ *               liabilityInsurancePolicyNumber:
+ *                 type: string
+ *                 description: Policy number of liability insurance
+ *               liabilityInsuranceInsurer:
+ *                 type: string
+ *                 description: Insurer of liability insurance
+ *               liabilityInsuranceDocument:
+ *                 type: string
+ *                 description: S3 URL for uploaded liability insurance document
+ *               hasCertificateOfConduct:
+ *                 type: boolean
+ *                 description: Whether the doctor has a certificate of conduct (VOG)
+ *               certificateOfConductDocument:
+ *                 type: string
+ *                 description: S3 URL for uploaded certificate of conduct
  *     responses:
  *       200:
  *         description: Doctor profile created/updated successfully
@@ -526,6 +586,26 @@ router.get('/profile', AuthMiddleware.authenticate, AuthMiddleware.authorize(['d
  *                       type: array
  *                       items:
  *                         type: object
+ *                     professionalRegistry:
+ *                       type: string
+ *                     chamberOfCommerceNumber:
+ *                       type: string
+ *                     iban:
+ *                       type: string
+ *                     vatNumber:
+ *                       type: string
+ *                     hasLiabilityInsurance:
+ *                       type: boolean
+ *                     liabilityInsurancePolicyNumber:
+ *                       type: string
+ *                     liabilityInsuranceInsurer:
+ *                       type: string
+ *                     liabilityInsuranceDocument:
+ *                       type: string
+ *                     hasCertificateOfConduct:
+ *                       type: boolean
+ *                     certificateOfConductDocument:
+ *                       type: string
  *       400:
  *         description: Bad request - Invalid input data
  *         content:
@@ -578,7 +658,8 @@ router.get('/profile', AuthMiddleware.authenticate, AuthMiddleware.authorize(['d
  *                   type: string
  *                   example: Failed to update doctor profile
  */
-router.post('/profile', AuthMiddleware.authenticate, DoctorHandler.createOrUpdateProfile);
+router.post('/profile', AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['doctor']), DoctorHandler.createOrUpdateProfile);
 
 /**
  * @swagger
@@ -1029,7 +1110,8 @@ router.put('/availability', AuthMiddleware.authenticate, AuthMiddleware.authoriz
  *       500:
  *         description: Server error
  */
-router.post('/verify-registration', AuthMiddleware.authenticate, DoctorHandler.verifyRegistrationNumber);
+router.post('/verify-registration', AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['doctor']), DoctorHandler.verifyRegistrationNumber);
 
 
 /**
@@ -1140,7 +1222,8 @@ router.delete('/unavailability', AuthMiddleware.authenticate, AuthMiddleware.aut
  *       500:
  *         description: Server error
  */
-router.get('/unavailability', DoctorHandler.getUnavailability);
+router.get('/unavailability', AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['doctor']),DoctorHandler.getUnavailability);
 
 /**
  * @swagger
@@ -1171,6 +1254,80 @@ router.get('/unavailability', DoctorHandler.getUnavailability);
  *       500:
  *         description: Server error
  */
-router.get('/big-register', DoctorHandler.getDoctorFromBigRegister);
+router.get('/big-register',AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['doctor']), DoctorHandler.getDoctorFromBigRegister);
+
+/**
+ * @swagger
+ * /api/v1/doctors/liability-insurance:
+ *   post:
+ *     tags:
+ *       - Doctors
+ *     summary: Upload liability insurance document
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - document
+ *             properties:
+ *               document:
+ *                 type: string
+ *                 format: binary
+ *                 description: Liability insurance document file
+ *     responses:
+ *       200:
+ *         description: Document uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 url:
+ *                   type: string
+ *       400:
+ *         description: No file uploaded
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.post('/liability-insurance',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['doctor']),
+  upload.single('document'),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+      // Upload to S3
+      const url = await AWSService.uploadToS3(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype
+      );
+      // Update doctor profile
+      const doctor = await Doctor.findOne({ userId: req.user.id });
+      if (!doctor) {
+        return res.status(404).json({ message: 'Doctor profile not found' });
+      }
+      doctor.liabilityInsuranceDocument = url;
+      await doctor.save();
+      res.json({ message: 'Liability insurance document uploaded successfully', url });
+    } catch (error) {
+      console.error('Liability insurance upload error:', error);
+      res.status(500).json({ message: 'Server error while uploading liability insurance document' });
+    }
+  }
+);
 
 module.exports = router;

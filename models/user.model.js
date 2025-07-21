@@ -1,12 +1,24 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  email: {
+  firstName: {
     type: String,
     required: true,
-    unique: true,
-    trim: true,
-    lowercase: true
+    trim: true
+  },
+  lastName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  dob: {
+    type: Date,
+    required: true
+  },
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other'],
+    required: true
   },
   phone: {
     countryCode: {
@@ -18,27 +30,33 @@ const userSchema = new mongoose.Schema({
       required: true
     }
   },
-  firstName: {
+  email: {
     type: String,
     required: true,
-    trim: true
+    unique: true,
+    trim: true,
+    lowercase: true
   },
-  lastName: {
+  avatar: {
     type: String,
+    default: ''
+  },
+  address: {
+    street: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    country: { type: String, required: true },
+    postalCode: { type: String, required: true }
+  },
+  languages: {
+    type: [String],
     required: true,
-    trim: true
+    validate: [arr => Array.isArray(arr) && arr.length > 0, 'At least one language is required']
   },
   role: {
     type: String,
     enum: ['patient', 'doctor', 'admin'],
     default: 'patient'
-  },
-  address: {
-    street: String,
-    city: String,
-    state: String,
-    country: String,
-    postalCode: String
   },
   isEmailVerified: {
     type: Boolean,
@@ -55,13 +73,6 @@ const userSchema = new mongoose.Schema({
     enum: ['active', 'inactive', 'suspended'],
     default: 'active'
   },
-  dob: Date,
-  gender: {
-    type: String,
-    enum: ['male', 'female', 'other']
-  },
-  avatarUrl: String,
-  languages: [String],
   lastLogin: Date,
   createdAt: {
     type: Date,
@@ -70,7 +81,18 @@ const userSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  // Doctor-specific fields
+  professionalRegistry: { type: String, default: '' }, // Professional registry or association
+  chamberOfCommerceNumber: { type: String, default: '' }, // Chamber of Commerce number
+  iban: { type: String, default: '' }, // IBAN for payments
+  vatNumber: { type: String, default: '' }, // VAT number
+  hasLiabilityInsurance: { type: Boolean, default: false }, // Has valid professional liability insurance
+  liabilityInsurancePolicyNumber: { type: String, default: '' }, // Policy number
+  liabilityInsuranceInsurer: { type: String, default: '' }, // Insurer
+  liabilityInsuranceDocument: { type: String, default: '' }, // S3 URL for uploaded insurance document
+  hasCertificateOfConduct: { type: Boolean, default: false }, // Has certificate of conduct (VOG)
+  certificateOfConductDocument: { type: String, default: '' }, // S3 URL for uploaded certificate of conduct
 }, {
   timestamps: true
 });

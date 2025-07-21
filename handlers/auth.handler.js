@@ -128,7 +128,8 @@ class AuthHandler {
           firstName: user.firstName,
           lastName: user.lastName,
           isEmailVerified: user.isEmailVerified,
-          isPhoneVerified: user.isPhoneVerified
+          isPhoneVerified: user.isPhoneVerified,
+          avatar: user.avatar
         }
       });
     } catch (error) {
@@ -259,12 +260,15 @@ class AuthHandler {
 
   // Update existing unverified user
   static async updateUnverifiedUser(existingUser, userData) {
-    const { firstName, lastName, role, address, email, phone } = userData;
+    const { firstName, lastName, dob, gender, role, address, email, phone, languages } = userData;
 
     existingUser.firstName = firstName;
     existingUser.lastName = lastName;
+    existingUser.dob = dob;
+    existingUser.gender = gender;
     existingUser.role = role;
     existingUser.address = address;
+    existingUser.languages = languages;
 
     // Update phone if changed
     if (phone.number !== existingUser.phone.number) {
@@ -285,7 +289,7 @@ class AuthHandler {
       await OTPService.generateAndSendOTP(email, 'email');
     }
     if (!existingUser.isPhoneVerified) {
-      //await OTPService.generateAndSendOTP(phone.number, 'phone', phone.countryCode);
+      //await OTPService.generateAndSendOTP(phone.number, phone.countryCode);
     }
 
     return {
@@ -299,18 +303,22 @@ class AuthHandler {
     try {
       logger.info('Registration request received:', { body: req.body });
       
-      const { 
-        email, 
-        phone, 
-        firstName, 
-        lastName, 
+      const {
+        email,
+        phone,
+        firstName,
+        lastName,
+        dob,
+        gender,
         role = 'patient',
-        address
+        address,
+        languages,
+        avatar: avatarUrl // Accept avatar from request body
       } = req.body;
 
       // Validate required fields
-      if (!email || !phone || !firstName || !lastName) {
-        logger.warn('Missing required fields:', { email, phone, firstName, lastName });
+      if (!email || !phone || !firstName || !lastName || !dob || !gender || !address || !languages) {
+        logger.warn('Missing required fields:', { email, phone, firstName, lastName, dob, gender, address, languages });
         return res.status(400).json({ 
           success: false, 
           error: 'Missing required fields' 
@@ -334,6 +342,45 @@ class AuthHandler {
         });
       }
 
+      // Validate dob
+      if (isNaN(Date.parse(dob))) {
+        logger.warn('Invalid date of birth:', { dob });
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid date of birth' 
+        });
+      }
+
+      // Validate gender
+      if (!['male', 'female', 'other'].includes(gender)) {
+        logger.warn('Invalid gender:', { gender });
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid gender' 
+        });
+      }
+
+      // Validate address fields
+      const requiredAddressFields = ['street', 'city', 'state', 'country', 'postalCode'];
+      for (const field of requiredAddressFields) {
+        if (!address[field]) {
+          logger.warn('Missing address field:', { field });
+          return res.status(400).json({ 
+            success: false, 
+            error: `Missing address field: ${field}` 
+          });
+        }
+      }
+
+      // Validate languages
+      if (!Array.isArray(languages) || languages.length === 0) {
+        logger.warn('Languages must be a non-empty array:', { languages });
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Languages must be a non-empty array' 
+        });
+      }
+
       // Check if user already exists
       const existingUser = await User.findOne({
         $or: [
@@ -349,10 +396,13 @@ class AuthHandler {
           result = await AuthHandler.updateUnverifiedUser(existingUser, {
             firstName,
             lastName,
+            dob,
+            gender,
             role,
             address,
             email,
-            phone
+            phone,
+            languages
           });
 
           if (!result.success) {
@@ -387,25 +437,34 @@ class AuthHandler {
         phone: formatPhoneNumber(phone),
         firstName,
         lastName,
+        dob: new Date(dob),
+        gender,
         role,
         address,
+        languages,
         isEmailVerified: false,
-        isPhoneVerified: false
+        isPhoneVerified: false,
+        avatar: avatarUrl || ''
       });
 
       try {
         await user.save();
       } catch (error) {
         if (error.code === 11000) {
-          if (error.keyPattern.email) {
+          if (error.keyPattern && error.keyPattern.email) {
             return res.status(400).json({
               success: false,
-              error: 'Email already exists'
+              error: 'A user with this email already exists. Please use a different email or try logging in.'
             });
-          } else if (error.keyPattern['phone.number']) {
+          } else if (error.keyPattern && error.keyPattern['phone.number']) {
             return res.status(400).json({
               success: false,
-              error: 'Phone number already exists'
+              error: 'A user with this phone number already exists. Please use a different phone number or try logging in.'
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              error: 'A user with the provided information already exists.'
             });
           }
         }
@@ -425,15 +484,25 @@ class AuthHandler {
           email: user.email,
           role: user.role,
           firstName: user.firstName,
-          lastName: user.lastName
+          lastName: user.lastName,
+          dob: user.dob,
+          gender: user.gender,
+          phone: user.phone,
+          address: user.address,
+          languages: user.languages,
+          isEmailVerified: user.isEmailVerified,
+          isPhoneVerified: user.isPhoneVerified,
+          status: user.status,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          avatar: user.avatar
         }
       });
     } catch (error) {
       logger.error('Registration error:', error);
       res.status(500).json({ 
         success: false, 
-        error: 'Failed to register user',
-        details: error.message
+        error: 'Failed to register user. Please try again later.'
       });
     }
   }

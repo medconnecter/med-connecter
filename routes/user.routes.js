@@ -115,11 +115,18 @@ router.put('/profile',
   AuthMiddleware.authenticate,
   AuthMiddleware.authorize(['patient', 'admin']),
   [
-    body('firstName').optional().isString().withMessage('First name must be a string'),
-    body('lastName').optional().isString().withMessage('Last name must be a string'),
-    body('phone').optional().isString().withMessage('Phone must be a string'),
-    body('address').optional().isObject().withMessage('Address must be an object'),
-    body('languages').optional().isArray().withMessage('Languages must be an array')
+    body('firstName').exists().isString().withMessage('First name is required'),
+    body('lastName').exists().isString().withMessage('Last name is required'),
+    body('dob').exists().isISO8601().withMessage('Date of birth is required and must be a valid date'),
+    body('gender').exists().isIn(['male', 'female', 'other']).withMessage('Gender is required and must be one of male, female, other'),
+    body('phone').exists().isObject().withMessage('Phone is required').custom(phone => phone && phone.number && phone.countryCode),
+    body('address').exists().isObject().withMessage('Address is required'),
+    body('address.street').exists().isString().withMessage('Street is required'),
+    body('address.city').exists().isString().withMessage('City is required'),
+    body('address.state').exists().isString().withMessage('State is required'),
+    body('address.country').exists().isString().withMessage('Country is required'),
+    body('address.postalCode').exists().isString().withMessage('Postal code is required'),
+    body('languages').exists().isArray({ min: 1 }).withMessage('Languages must be a non-empty array')
   ],
   UserHandler.updateProfile
 );
@@ -156,7 +163,7 @@ router.put('/profile',
  */
 router.post('/profile/picture',
   AuthMiddleware.authenticate,
-  AuthMiddleware.authorize(['patient', 'admin']),
+  AuthMiddleware.authorize(['patient', 'admin','doctor']),
   upload.single('picture'),
   UserHandler.updateProfilePicture
 );

@@ -70,7 +70,7 @@ module.exports = {
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     region: process.env.AWS_REGION || 'eu-west-1',
     s3: {
-      bucket: process.env.AWS_BUCKET
+      bucket: process.env.AWS_S3_BUCKET_NAME
     }
   },
 

@@ -67,8 +67,7 @@ class AWSService {
         Bucket: config.aws.s3.bucket,
         Key: key,
         Body: buffer,
-        ContentType: mimetype,
-        ACL: 'public-read'
+        ContentType: mimetype
       });
 
       await s3Client.send(command);

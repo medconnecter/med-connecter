@@ -5,6 +5,7 @@ const AuthMiddleware = require('../middleware/auth.middleware');
 const sessionMiddleware = require('../middleware/session.middleware');
 const Session = require('../models/session.model');
 const logger = require('../utils/logger');
+const { body } = require('express-validator');
 
 /**
  * @swagger
@@ -17,6 +18,10 @@ const logger = require('../utils/logger');
  *         - phone
  *         - firstName
  *         - lastName
+ *         - dob
+ *         - gender
+ *         - address
+ *         - languages
  *         - role
  *       properties:
  *         email:
@@ -33,6 +38,13 @@ const logger = require('../utils/logger');
  *           type: string
  *         lastName:
  *           type: string
+ *         dob:
+ *           type: string
+ *           format: date
+ *           description: Date of birth (ISO8601 format)
+ *         gender:
+ *           type: string
+ *           enum: [male, female, other]
  *         role:
  *           type: string
  *           enum: [patient, doctor]
@@ -49,6 +61,11 @@ const logger = require('../utils/logger');
  *               type: string
  *             postalCode:
  *               type: string
+ *         languages:
+ *           type: array
+ *           items:
+ *             type: string
+ *           description: List of languages spoken by the user (at least one required)
  */
 
 /**
@@ -69,7 +86,24 @@ const logger = require('../utils/logger');
  *       400:
  *         description: Invalid input data
  */
-router.post('/register', AuthHandler.register);
+router.post('/register',
+  [
+    body('firstName').exists().isString().withMessage('First name is required'),
+    body('lastName').exists().isString().withMessage('Last name is required'),
+    body('dob').exists().isISO8601().withMessage('Date of birth is required and must be a valid date'),
+    body('gender').exists().isIn(['male', 'female', 'other']).withMessage('Gender is required and must be one of male, female, other'),
+    body('phone').exists().isObject().withMessage('Phone is required').custom(phone => phone && phone.number && phone.countryCode),
+    body('email').exists().isEmail().withMessage('Email is required and must be valid'),
+    body('address').exists().isObject().withMessage('Address is required'),
+    body('address.street').exists().isString().withMessage('Street is required'),
+    body('address.city').exists().isString().withMessage('City is required'),
+    body('address.state').exists().isString().withMessage('State is required'),
+    body('address.country').exists().isString().withMessage('Country is required'),
+    body('address.postalCode').exists().isString().withMessage('Postal code is required'),
+    body('languages').exists().isArray({ min: 1 }).withMessage('Languages must be a non-empty array')
+  ],
+  AuthHandler.register
+);
 
 /**
  * @swagger

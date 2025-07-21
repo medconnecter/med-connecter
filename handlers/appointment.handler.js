@@ -3,6 +3,13 @@ const Doctor = require('../models/doctor.model');
 const User = require('../models/user.model');
 const { validationResult } = require('express-validator');
 
+// Helper to get slot duration for a doctor
+async function getSlotDurationMinutes(doctorId) {
+  const Doctor = require('../models/doctor.model');
+  const doctor = await Doctor.findById(doctorId);
+  return doctor && doctor.slotDurationMinutes ? doctor.slotDurationMinutes : 15;
+}
+
 const AppointmentHandler = {
   // Create a new appointment
   async createAppointment(req, res) {
@@ -15,6 +22,11 @@ const AppointmentHandler = {
       const doctor = await Doctor.findById(doctorId);
       if (!doctor) {
         return res.status(404).json({ message: 'Doctor not found' });
+      }
+      // Check if the slot is already fully booked
+      const existingAppointments = await Appointment.find({ doctorId, date, timeSlot, status: { $nin: ['cancelled'] } });
+      if (existingAppointments.length >= 1) {
+        return res.status(409).json({ message: 'This slot is already fully booked.' });
       }
       // Parse requested slot
       const [startTime, endTime] = timeSlot.split('-');
@@ -180,11 +192,22 @@ const AppointmentHandler = {
       }
       // Get all appointments for that doctor and date
       const appointments = await Appointment.find({ doctorId, date, status: { $nin: ['cancelled'] } });
-      const bookedSlots = appointments.map(a => a.timeSlot);
-      // Filter out booked slots
-      const availableSlots = daySchedule.slots
-        .filter(slot => !bookedSlots.includes(slot.startTime + '-' + slot.endTime))
-        .map(slot => slot.startTime + '-' + slot.endTime);
+      const booked = appointments.map(a => a.timeSlot);
+      const availableSlots = [];
+      const slotDuration = await getSlotDurationMinutes(doctorId);
+      for (const slot of daySchedule.slots) {
+        const [slotStart, slotEnd] = [slot.startTime, slot.endTime].map(t => parseInt(t.replace(':', ''), 10));
+        let current = slotStart;
+        while (current + slotDuration <= slotEnd) {
+          const s = String(current).padStart(4, '0');
+          const e = String(current + slotDuration).padStart(4, '0');
+          const slotStr = `${s.slice(0,2)}:${s.slice(2)}-${e.slice(0,2)}:${e.slice(2)}`;
+          if (!booked.includes(slotStr)) {
+            availableSlots.push(slotStr);
+          }
+          current += slotDuration;
+        }
+      }
       res.json({ slots: availableSlots });
     } catch (error) {
       console.error('getAvailableSlots error:', error);
@@ -209,6 +232,11 @@ const AppointmentHandler = {
         appointment.doctorId.toString() !== req.user.id
       ) {
         return res.status(403).json({ message: 'Forbidden' });
+      }
+      // Check if the slot is already fully booked
+      const existingAppointments = await Appointment.find({ doctorId: appointment.doctorId, date, timeSlot, status: { $nin: ['cancelled'] }, _id: { $ne: id } });
+      if (existingAppointments.length >= 1) {
+        return res.status(409).json({ message: 'This slot is already fully booked.' });
       }
       // Parse requested slot
       const [startTime, endTime] = timeSlot.split('-');
@@ -277,29 +305,27 @@ const AppointmentHandler = {
         // For each available slot, break it into 30-min intervals and filter out those overlapping with existing appointments
         const booked = appointments.map(a => [a.startTime, a.endTime].map(t => parseInt(t.replace(':', ''), 10)));
         const availableSlots = [];
+        const slotDuration = await getSlotDurationMinutes(doctorId);
         for (const slot of daySchedule.slots) {
           const [slotStart, slotEnd] = [slot.startTime, slot.endTime].map(t => parseInt(t.replace(':', ''), 10));
-          // Generate all possible 30-min sub-slots
+          // Generate all possible sub-slots of slotDuration duration
           let current = slotStart;
-          while (current < slotEnd) {
-            let next = current + 30;
-            if (next > slotEnd) break;
+          while (current + slotDuration <= slotEnd) {
+            const s = String(current).padStart(4, '0');
+            const e = String(current + slotDuration).padStart(4, '0');
             // Check overlap with booked
             let overlap = false;
             for (const [bStart, bEnd] of booked) {
-              if (!(next <= bStart || current >= bEnd)) {
+              if (!(current + slotDuration <= bStart || current >= bEnd)) {
                 overlap = true;
                 break;
               }
             }
             if (!overlap) {
               // Format as HH:MM-HH:MM
-              const format = n => n.toString().padStart(4, '0');
-              const s = format(current);
-              const e = format(next);
               availableSlots.push(`${s.slice(0,2)}:${s.slice(2)}-${e.slice(0,2)}:${e.slice(2)}`);
             }
-            current = next;
+            current += slotDuration;
           }
         }
         results.push({ date: dateStr, slots: availableSlots });

@@ -216,6 +216,20 @@ class DoctorHandler {
         }
       }
 
+      // Accept doctor-specific fields from req.body
+      const {
+        professionalRegistry,
+        chamberOfCommerceNumber,
+        iban,
+        vatNumber,
+        hasLiabilityInsurance,
+        liabilityInsurancePolicyNumber,
+        liabilityInsuranceInsurer,
+        liabilityInsuranceDocument,
+        hasCertificateOfConduct,
+        certificateOfConductDocument
+      } = req.body;
+
       // Update profile with all required fields
       const updateData = {
         specializations,
@@ -232,6 +246,21 @@ class DoctorHandler {
         availability: availability || [],
         status: 'pending' // Set to pending for admin review
       };
+      // Add doctor-specific fields to user profile if provided
+      const userUpdateData = {};
+      if (professionalRegistry !== undefined) userUpdateData.professionalRegistry = professionalRegistry;
+      if (chamberOfCommerceNumber !== undefined) userUpdateData.chamberOfCommerceNumber = chamberOfCommerceNumber;
+      if (iban !== undefined) userUpdateData.iban = iban;
+      if (vatNumber !== undefined) userUpdateData.vatNumber = vatNumber;
+      if (hasLiabilityInsurance !== undefined) userUpdateData.hasLiabilityInsurance = hasLiabilityInsurance;
+      if (liabilityInsurancePolicyNumber !== undefined) userUpdateData.liabilityInsurancePolicyNumber = liabilityInsurancePolicyNumber;
+      if (liabilityInsuranceInsurer !== undefined) userUpdateData.liabilityInsuranceInsurer = liabilityInsuranceInsurer;
+      if (liabilityInsuranceDocument !== undefined) userUpdateData.liabilityInsuranceDocument = liabilityInsuranceDocument;
+      if (hasCertificateOfConduct !== undefined) userUpdateData.hasCertificateOfConduct = hasCertificateOfConduct;
+      if (certificateOfConductDocument !== undefined) userUpdateData.certificateOfConductDocument = certificateOfConductDocument;
+      if (Object.keys(userUpdateData).length > 0) {
+        await User.findByIdAndUpdate(userId, { $set: userUpdateData });
+      }
 
       // Update doctor profile
       doctor = await Doctor.findByIdAndUpdate(
@@ -243,24 +272,7 @@ class DoctorHandler {
       res.json({
         success: true,
         message: 'Doctor profile updated successfully. Waiting for admin approval.',
-        doctor: {
-          id: doctor._id,
-          registrationNumber: doctor.registrationNumber,
-          verificationStatus: doctor.verificationStatus,
-          status: doctor.status,
-          specializations: doctor.specializations,
-          experience: doctor.experience,
-          consultationFee: doctor.consultationFee,
-          currency: doctor.currency,
-          about: doctor.about,
-          education: doctor.education,
-          training: doctor.training,
-          awards: doctor.awards,
-          publications: doctor.publications,
-          services: doctor.services,
-          clinicLocation: doctor.clinicLocation,
-          availability: doctor.availability
-        }
+        doctor
       });
     } catch (error) {
       logger.error('Doctor profile update error:', error);
@@ -286,26 +298,7 @@ class DoctorHandler {
 
       res.json({
         success: true,
-        doctor: {
-          id: doctor._id,
-          registrationNumber: doctor.registrationNumber,
-          verificationStatus: doctor.verificationStatus,
-          status: doctor.status,
-          specializations: doctor.specializations,
-          experience: doctor.experience,
-          consultationFee: doctor.consultationFee,
-          currency: doctor.currency,
-          about: doctor.about,
-          education: doctor.education,
-          training: doctor.training,
-          awards: doctor.awards,
-          publications: doctor.publications,
-          services: doctor.services,
-          clinicLocation: doctor.clinicLocation,
-          availability: doctor.availability,
-          createdAt: doctor.createdAt,
-          updatedAt: doctor.updatedAt
-        }
+        doctor
       });
     } catch (error) {
       logger.error('Get doctor profile error:', error);
