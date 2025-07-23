@@ -98,6 +98,29 @@ const UserHandler = {
       console.error('Error in updateProfilePicture:', error);
       res.status(500).json({ message: 'Server error' });
     }
+  },
+
+  // Deactivate user
+  deactivateUser: async (req, res) => {
+    try {
+      const { userId } = req.params;
+      // Only allow self-deactivation or admin
+      if (req.user.role !== 'admin' && req.user.id !== userId) {
+        return res.status(403).json({ message: 'Not authorized to deactivate this user' });
+      }
+      const user = await User.findByIdAndUpdate(
+        userId,
+        { $set: { status: 'inactive' } },
+        { new: true }
+      );
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      res.json({ message: 'User deactivated successfully', user });
+    } catch (error) {
+      console.error('Error in deactivateUser:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
   }
 };
 

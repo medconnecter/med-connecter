@@ -26,19 +26,18 @@ class AdminHandler {
   // Verify doctor profile
   static async verifyDoctorProfile(req, res) {
     try {
-      const { doctorId, status, rejectionReason } = req.body;
+      const { doctorId, status, adminComments } = req.body;
 
-      if (!['approved', 'rejected'].includes(status)) {
+      if (!['VERIFIED', 'REJECTED'].includes(status)) {
         return res.status(400).json({
           success: false,
           error: 'Invalid status'
         });
       }
-
-      if (status === 'rejected' && !rejectionReason) {
+      if (!adminComments || adminComments.trim() === '') {
         return res.status(400).json({
           success: false,
-          error: 'Rejection reason is required'
+          error: 'Admin comments are required for approval or rejection.'
         });
       }
 
@@ -51,9 +50,7 @@ class AdminHandler {
       }
 
       doctor.status = status;
-      if (status === 'rejected') {
-        doctor.rejectionReason = rejectionReason;
-      }
+      doctor.adminComments = adminComments;
 
       await doctor.save();
 

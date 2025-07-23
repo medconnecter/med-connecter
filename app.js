@@ -13,6 +13,8 @@ const logger = require('./utils/logger');
 const { errorHandler } = require('./utils/error.handler');
 const versionMiddleware = require('./middleware/version.middleware');
 const sessionMiddleware = require('./middleware/session.middleware');
+const AuthMiddleware = require('./middleware/auth.middleware');
+
 
 // Debug environment variables
 logger.info('Environment variables:', {
@@ -21,6 +23,7 @@ logger.info('Environment variables:', {
   MONGODB_URI: process.env.MONGODB_URI ? '***' : undefined,
   CONFIG_PORT: config.get('port')
 });
+
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -205,7 +208,7 @@ app.use('/api/v1/chats', chatRoutes);
 app.use('/api/v1/video', videoRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
-
+app.use(AuthMiddleware.blockDeactivated);
 // Error handling middleware
 app.use(errorHandler);
 

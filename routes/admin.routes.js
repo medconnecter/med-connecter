@@ -45,7 +45,7 @@ const router = express.Router();
  *       properties:
  *         status:
  *           type: string
- *           enum: [pending, approved, rejected]
+ *           enum: [pending, verified, rejected]
  *         comments:
  *           type: string
  */
@@ -367,8 +367,8 @@ router.get('/doctors/:id',
  *   post:
  *     tags:
  *       - Admin
- *     summary: Verify a doctor
- *     description: Update a doctor's account status
+ *     summary: Approve or reject a doctor
+ *     description: Admin can approve (VERIFIED) or reject (REJECTED) a doctor. Comments are mandatory for both actions.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -386,14 +386,15 @@ router.get('/doctors/:id',
  *             type: object
  *             required:
  *               - status
+ *               - comments
  *             properties:
  *               status:
  *                 type: string
- *                 enum: [pending, active, inactive, suspended]
+ *                 enum: [VERIFIED, REJECTED]
  *                 description: Doctor's account status
- *               rejectionReason:
+ *               comments:
  *                 type: string
- *                 description: Reason for rejection if status is suspended
+ *                 description: Mandatory comments for approval or rejection
  *     responses:
  *       200:
  *         description: Doctor status updated successfully
@@ -413,7 +414,9 @@ router.get('/doctors/:id',
  *                       type: string
  *                     status:
  *                       type: string
- *                       enum: [pending, active, inactive, suspended]
+ *                       enum: [VERIFIED, REJECTED]
+ *                     adminComments:
+ *                       type: string
  *       400:
  *         description: Invalid request data
  *       401:
@@ -429,8 +432,8 @@ router.post('/doctors/:id/verify',
   AuthMiddleware.authenticate,
   AuthMiddleware.authorize(['admin']),
   [
-    body('status').isIn(['pending', 'active', 'inactive', 'suspended']).withMessage('Invalid status'),
-    body('rejectionReason').optional().isString().withMessage('Rejection reason must be a string')
+    body('status').isIn(['VERIFIED', 'REJECTED']).withMessage('Invalid status'),
+    body('comments').isString().notEmpty().withMessage('Comments are required and must be a string')
   ],
   async (req, res) => {
     try {
@@ -439,7 +442,7 @@ router.post('/doctors/:id/verify',
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { status, rejectionReason } = req.body;
+      const { status, comments } = req.body;
       const doctor = await Doctor.findById(req.params.id);
 
       if (!doctor) {
@@ -449,18 +452,8 @@ router.post('/doctors/:id/verify',
         });
       }
 
-      // Validate rejection reason is provided when suspending
-      if (status === 'suspended' && !rejectionReason) {
-        return res.status(400).json({
-          success: false,
-          error: 'Rejection reason is required when suspending a doctor'
-        });
-      }
-
       doctor.status = status;
-      if (status === 'suspended') {
-        doctor.rejectionReason = rejectionReason;
-      }
+      doctor.adminComments = comments;
 
       await doctor.save();
 
@@ -471,7 +464,8 @@ router.post('/doctors/:id/verify',
         message: 'Doctor status updated successfully',
         doctor: {
           id: doctor._id,
-          status: doctor.status
+          status: doctor.status,
+          adminComments: doctor.adminComments
         }
       });
     } catch (error) {

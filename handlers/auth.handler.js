@@ -1,4 +1,5 @@
 const User = require('../models/user.model');
+const Doctor = require('../models/doctor.model');
 const Session = require('../models/session.model');
 const OTPService = require('../services/otp.service');
 const { generateToken, isValidEmail, isValidPhone, formatPhoneNumber } = require('../utils/helpers');
@@ -317,12 +318,44 @@ class AuthHandler {
       } = req.body;
 
       // Validate required fields
-      if (!email || !phone || !firstName || !lastName || !dob || !gender || !address || !languages) {
-        logger.warn('Missing required fields:', { email, phone, firstName, lastName, dob, gender, address, languages });
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Missing required fields' 
-        });
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({ success: false, error: 'Email is required and must be a string' });
+      }
+      if (!phone || typeof phone !== 'object') {
+        return res.status(400).json({ success: false, error: 'Phone is required and must be an object' });
+      }
+      if (!phone.countryCode || typeof phone.countryCode !== 'string' || !/^\+[0-9]{1,4}$/.test(phone.countryCode)) {
+        return res.status(400).json({ success: false, error: 'Country code is required and must be in format +<countrycode>' });
+      }
+      if (!phone.number || typeof phone.number !== 'string' || !/^\+?[1-9]\d{1,14}$/.test(phone.number)) {
+        return res.status(400).json({ success: false, error: 'Phone number is required and must be in E.164 format' });
+      }
+      if (!firstName || typeof firstName !== 'string' || !firstName.trim()) {
+        return res.status(400).json({ success: false, error: 'First name is required and must be a non-empty string' });
+      }
+      if (!lastName || typeof lastName !== 'string' || !lastName.trim()) {
+        return res.status(400).json({ success: false, error: 'Last name is required and must be a non-empty string' });
+      }
+      if (!dob || isNaN(Date.parse(dob)) || new Date(dob) > new Date()) {
+        return res.status(400).json({ success: false, error: 'Date of birth is required, must be a valid date, and must be in the past' });
+      }
+      if (!gender || !['male', 'female', 'other'].includes(gender)) {
+        return res.status(400).json({ success: false, error: 'Gender is required and must be one of male, female, other' });
+      }
+      if (!address || typeof address !== 'object') {
+        return res.status(400).json({ success: false, error: 'Address is required and must be an object' });
+      }
+      const requiredAddressFields = ['street', 'city', 'state', 'country', 'postalCode'];
+      for (const field of requiredAddressFields) {
+        if (!address[field] || typeof address[field] !== 'string' || !address[field].trim()) {
+          return res.status(400).json({ success: false, error: `Address field ${field} is required and must be a non-empty string` });
+        }
+      }
+      if (!languages || !Array.isArray(languages) || languages.length === 0 || !languages.every(l => typeof l === 'string' && l.trim())) {
+        return res.status(400).json({ success: false, error: 'Languages must be a non-empty array of non-empty strings' });
+      }
+      if (role && !['patient', 'doctor', 'admin'].includes(role)) {
+        return res.status(400).json({ success: false, error: 'Role must be one of patient, doctor, admin' });
       }
 
       // Validate email and phone
@@ -342,45 +375,6 @@ class AuthHandler {
         });
       }
 
-      // Validate dob
-      if (isNaN(Date.parse(dob))) {
-        logger.warn('Invalid date of birth:', { dob });
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Invalid date of birth' 
-        });
-      }
-
-      // Validate gender
-      if (!['male', 'female', 'other'].includes(gender)) {
-        logger.warn('Invalid gender:', { gender });
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Invalid gender' 
-        });
-      }
-
-      // Validate address fields
-      const requiredAddressFields = ['street', 'city', 'state', 'country', 'postalCode'];
-      for (const field of requiredAddressFields) {
-        if (!address[field]) {
-          logger.warn('Missing address field:', { field });
-          return res.status(400).json({ 
-            success: false, 
-            error: `Missing address field: ${field}` 
-          });
-        }
-      }
-
-      // Validate languages
-      if (!Array.isArray(languages) || languages.length === 0) {
-        logger.warn('Languages must be a non-empty array:', { languages });
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Languages must be a non-empty array' 
-        });
-      }
-
       // Check if user already exists
       const existingUser = await User.findOne({
         $or: [
@@ -389,45 +383,15 @@ class AuthHandler {
         ]
       });
 
-      let result;
       if (existingUser) {
-        // If user exists but is not verified, update their information
-        if (!existingUser.isEmailVerified || !existingUser.isPhoneVerified) {
-          result = await AuthHandler.updateUnverifiedUser(existingUser, {
-            firstName,
-            lastName,
-            dob,
-            gender,
-            role,
-            address,
-            email,
-            phone,
-            languages
-          });
-
-          if (!result.success) {
-            return res.status(400).json(result);
-          }
-
-          return res.status(200).json({
-            success: true,
-            message: 'User information updated. Please verify your email and phone.',
-            user: {
-              id: result.user._id,
-              email: result.user.email,
-              role: result.user.role,
-              firstName: result.user.firstName,
-              lastName: result.user.lastName,
-              isEmailVerified: result.user.isEmailVerified,
-              isPhoneVerified: result.user.isPhoneVerified
-            }
-          });
-        }
-
-        // If user is already verified, return error
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
-          error: 'User with this email or phone already exists and is verified'
+          error: 'User with this email or phone already exists',
+          code: 'USER_ALREADY_EXISTS',
+          details: {
+            email: existingUser.email === email ? 'Email already registered' : undefined,
+            phone: existingUser.phone && existingUser.phone.number === phone.number ? 'Phone number already registered' : undefined
+          }
         });
       }
 
@@ -449,6 +413,7 @@ class AuthHandler {
 
       try {
         await user.save();
+
       } catch (error) {
         if (error.code === 11000) {
           if (error.keyPattern && error.keyPattern.email) {

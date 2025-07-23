@@ -82,17 +82,6 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  // Doctor-specific fields
-  professionalRegistry: { type: String, default: '' }, // Professional registry or association
-  chamberOfCommerceNumber: { type: String, default: '' }, // Chamber of Commerce number
-  iban: { type: String, default: '' }, // IBAN for payments
-  vatNumber: { type: String, default: '' }, // VAT number
-  hasLiabilityInsurance: { type: Boolean, default: false }, // Has valid professional liability insurance
-  liabilityInsurancePolicyNumber: { type: String, default: '' }, // Policy number
-  liabilityInsuranceInsurer: { type: String, default: '' }, // Insurer
-  liabilityInsuranceDocument: { type: String, default: '' }, // S3 URL for uploaded insurance document
-  hasCertificateOfConduct: { type: Boolean, default: false }, // Has certificate of conduct (VOG)
-  certificateOfConductDocument: { type: String, default: '' }, // S3 URL for uploaded certificate of conduct
 }, {
   timestamps: true
 });

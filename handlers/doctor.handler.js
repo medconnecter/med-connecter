@@ -47,8 +47,7 @@ class DoctorHandler {
         doctor = new Doctor({
           userId,
           registrationNumber,
-          verificationStatus: verificationResult.success ? 'verified' : 'rejected',
-          status: 'pending',
+          status: 'DETAILS_REQUIRED',
           // Initialize with empty arrays and objects
           specializations: [],
           education: [],
@@ -69,9 +68,8 @@ class DoctorHandler {
       } else {
         // Update only registration number related fields
         doctor.registrationNumber = registrationNumber;
-        doctor.verificationStatus = verificationResult.success ? 'verified' : 'rejected';
         if (verificationResult.success) {
-          doctor.status = 'pending';
+          doctor.status = 'DETAILS_REQUIRED';
         }
       }
 
@@ -92,7 +90,6 @@ class DoctorHandler {
         doctor: {
           id: doctor._id,
           registrationNumber: doctor.registrationNumber,
-          verificationStatus: doctor.verificationStatus,
           status: doctor.status
         }
       });
@@ -119,25 +116,9 @@ class DoctorHandler {
         });
       }
 
-      // Find existing doctor profile
-      let doctor = await Doctor.findOne({ userId });
-      if (!doctor) {
-        return res.status(404).json({
-          success: false,
-          error: 'Doctor profile not found. Please verify registration number first.'
-        });
-      }
-
-      // Check if registration number is verified
-      if (doctor.verificationStatus !== 'verified') {
-        return res.status(400).json({
-          success: false,
-          error: 'Registration number must be verified before updating profile'
-        });
-      }
-
-      // Validate required fields
+      // Destructure all doctor-specific fields once
       const {
+        registrationNumber,
         specializations,
         experience,
         consultationFee,
@@ -149,8 +130,67 @@ class DoctorHandler {
         publications,
         services,
         clinicLocation,
-        availability
+        availability,
+        unavailability,
+        documents,
+        rating,
+        totalReviews,
+        slotDurationMinutes,
+        professionalRegistry,
+        chamberOfCommerceNumber,
+        iban,
+        vatNumber,
+        hasLiabilityInsurance,
+        liabilityInsurancePolicyNumber,
+        liabilityInsuranceInsurer,
+        liabilityInsuranceDocument,
+        hasCertificateOfConduct,
+        certificateOfConductDocument
       } = req.body;
+
+      // Find existing doctor profile
+      let doctor = await Doctor.findOne({ userId });
+      if (!doctor) {
+        // Create new doctor profile with provided details
+        doctor = new Doctor({
+          userId,
+          registrationNumber,
+          specializations,
+          experience,
+          consultationFee,
+          currency,
+          about,
+          education,
+          training,
+          awards,
+          publications,
+          services,
+          clinicLocation,
+          availability,
+          unavailability,
+          documents,
+          rating,
+          totalReviews,
+          slotDurationMinutes,
+          professionalRegistry,
+          chamberOfCommerceNumber,
+          iban,
+          vatNumber,
+          hasLiabilityInsurance,
+          liabilityInsurancePolicyNumber,
+          liabilityInsuranceInsurer,
+          liabilityInsuranceDocument,
+          hasCertificateOfConduct,
+          certificateOfConductDocument,
+          status: 'DETAILS_UPDATED'
+        });
+        await doctor.save();
+        return res.json({
+          success: true,
+          message: 'Doctor profile created successfully. Waiting for admin approval.',
+          doctor
+        });
+      }
 
       // Validate required fields
       if (!specializations || !Array.isArray(specializations) || specializations.length === 0) {
@@ -216,60 +256,38 @@ class DoctorHandler {
         }
       }
 
-      // Accept doctor-specific fields from req.body
-      const {
-        professionalRegistry,
-        chamberOfCommerceNumber,
-        iban,
-        vatNumber,
-        hasLiabilityInsurance,
-        liabilityInsurancePolicyNumber,
-        liabilityInsuranceInsurer,
-        liabilityInsuranceDocument,
-        hasCertificateOfConduct,
-        certificateOfConductDocument
-      } = req.body;
-
-      // Update profile with all required fields
-      const updateData = {
-        specializations,
-        experience,
-        consultationFee,
-        currency: currency || 'EUR',
-        about,
-        education,
-        training: training || [],
-        awards: awards || [],
-        publications: publications || [],
-        services: services || [],
-        clinicLocation,
-        availability: availability || [],
-        status: 'pending' // Set to pending for admin review
-      };
-      // Add doctor-specific fields to user profile if provided
-      const userUpdateData = {};
-      if (professionalRegistry !== undefined) userUpdateData.professionalRegistry = professionalRegistry;
-      if (chamberOfCommerceNumber !== undefined) userUpdateData.chamberOfCommerceNumber = chamberOfCommerceNumber;
-      if (iban !== undefined) userUpdateData.iban = iban;
-      if (vatNumber !== undefined) userUpdateData.vatNumber = vatNumber;
-      if (hasLiabilityInsurance !== undefined) userUpdateData.hasLiabilityInsurance = hasLiabilityInsurance;
-      if (liabilityInsurancePolicyNumber !== undefined) userUpdateData.liabilityInsurancePolicyNumber = liabilityInsurancePolicyNumber;
-      if (liabilityInsuranceInsurer !== undefined) userUpdateData.liabilityInsuranceInsurer = liabilityInsuranceInsurer;
-      if (liabilityInsuranceDocument !== undefined) userUpdateData.liabilityInsuranceDocument = liabilityInsuranceDocument;
-      if (hasCertificateOfConduct !== undefined) userUpdateData.hasCertificateOfConduct = hasCertificateOfConduct;
-      if (certificateOfConductDocument !== undefined) userUpdateData.certificateOfConductDocument = certificateOfConductDocument;
-      if (Object.keys(userUpdateData).length > 0) {
-        await User.findByIdAndUpdate(userId, { $set: userUpdateData });
-      }
-
-      // Update doctor profile
-      doctor = await Doctor.findByIdAndUpdate(
-        doctor._id,
-        { $set: updateData },
-        { new: true, runValidators: true }
-      );
-
-      res.json({
+      // Update doctor profile with all fields
+      doctor.registrationNumber = registrationNumber;
+      doctor.specializations = specializations;
+      doctor.experience = experience;
+      doctor.consultationFee = consultationFee;
+      doctor.currency = currency;
+      doctor.about = about;
+      doctor.education = education;
+      doctor.training = training;
+      doctor.awards = awards;
+      doctor.publications = publications;
+      doctor.services = services;
+      doctor.clinicLocation = clinicLocation;
+      doctor.availability = availability;
+      doctor.unavailability = unavailability;
+      doctor.documents = documents;
+      doctor.rating = rating;
+      doctor.totalReviews = totalReviews;
+      doctor.slotDurationMinutes = slotDurationMinutes;
+      doctor.professionalRegistry = professionalRegistry;
+      doctor.chamberOfCommerceNumber = chamberOfCommerceNumber;
+      doctor.iban = iban;
+      doctor.vatNumber = vatNumber;
+      doctor.hasLiabilityInsurance = hasLiabilityInsurance;
+      doctor.liabilityInsurancePolicyNumber = liabilityInsurancePolicyNumber;
+      doctor.liabilityInsuranceInsurer = liabilityInsuranceInsurer;
+      doctor.liabilityInsuranceDocument = liabilityInsuranceDocument;
+      doctor.hasCertificateOfConduct = hasCertificateOfConduct;
+      doctor.certificateOfConductDocument = certificateOfConductDocument;
+      doctor.status = 'DETAILS_UPDATED';
+      await doctor.save();
+      return res.json({
         success: true,
         message: 'Doctor profile updated successfully. Waiting for admin approval.',
         doctor
@@ -288,7 +306,7 @@ class DoctorHandler {
     try {
       const userId = req.user._id.toString(); // Convert to hex string
 
-      const doctor = await Doctor.findOne({ userId });
+      const doctor = await Doctor.findOne({ userId }).populate('userId');
       if (!doctor) {
         return res.status(404).json({
           success: false,
@@ -327,7 +345,7 @@ class DoctorHandler {
         doctor._id,
         { $set: req.body },
         { new: true }
-      ).populate('userId', 'firstName lastName email phone');
+      ).populate('userId');
 
       res.json(updatedDoctor);
     } catch (error) {
@@ -358,7 +376,7 @@ class DoctorHandler {
       }
 
       doctor.registrationNumber = registrationNumber;
-      doctor.verificationStatus = 'pending';
+      doctor.status = 'DETAILS_REQUIRED';
       await doctor.save();
 
       res.json({ message: 'Registration number submitted for verification' });
@@ -508,8 +526,10 @@ class DoctorHandler {
         query.specializations = specialization;
       }
 
-      if (verified) {
-        query.verificationStatus = verified === 'true' ? 'verified' : 'pending';
+      if (verified === 'true') {
+        query.status = 'VERIFIED';
+      } else if (verified === 'false') {
+        query.status = { $ne: 'VERIFIED' };
       }
 
       if (gender) {
@@ -533,7 +553,7 @@ class DoctorHandler {
       }
 
       const doctors = await Doctor.find(query)
-        .populate('userId', 'firstName lastName email')
+        .populate('userId')
         .skip((page - 1) * limit)
         .limit(Number(limit))
         .sort({ createdAt: -1 });
@@ -565,7 +585,7 @@ class DoctorHandler {
           error: 'Doctor id is required as a query parameter.'
         });
       }
-      const doctor = await Doctor.findById(id).populate('userId', 'firstName lastName email');
+      const doctor = await Doctor.findById(id).populate('userId');
       if (!doctor) {
         return res.status(404).json({
           success: false,
@@ -620,14 +640,14 @@ class DoctorHandler {
       
       if (doctorId) {
         // Get availability for specific doctor
-        const doctor = await Doctor.findById(doctorId).populate('userId', 'firstName lastName');
+        const doctor = await Doctor.findById(doctorId).populate('userId');
         if (!doctor) {
           return res.status(404).json({ success: false, error: 'Doctor not found' });
         }
         doctors = [doctor];
       } else {
         // Get availability for all doctors
-        const query = { status: 'active' };
+        const query = { status: 'VERIFIED' };
         if (gender) {
           query.gender = gender;
         }
@@ -643,7 +663,7 @@ class DoctorHandler {
         if (rating) {
           query.rating = { $gte: Number(rating) };
         }
-        doctors = await Doctor.find(query).populate('userId', 'firstName lastName');
+        doctors = await Doctor.find(query).populate('userId');
       }
 
       const allAvailability = [];
@@ -670,7 +690,7 @@ class DoctorHandler {
           // Add doctor info only when returning multiple doctors
           if (!doctorId) {
             availabilityEntry.doctorId = doctor._id;
-            availabilityEntry.doctorName = `${doctor.userId.firstName} ${doctor.userId.lastName}`;
+            availabilityEntry.doctorName = doctor.userId && doctor.userId.firstName && doctor.userId.lastName ? `${doctor.userId.firstName} ${doctor.userId.lastName}` : '';
           }
           
           doctorAvailability.push(availabilityEntry);
@@ -743,8 +763,7 @@ class DoctorHandler {
       const doctor = new Doctor({
         userId,
         registrationNumber: '',
-        verificationStatus: 'pending',
-        status: 'inactive',
+        status: 'DETAILS_REQUIRED',
         specializations: [],
         education: [],
         training: [],
@@ -768,7 +787,6 @@ class DoctorHandler {
         doctor: {
           id: doctor._id,
           registrationNumber: doctor.registrationNumber,
-          verificationStatus: doctor.verificationStatus,
           status: doctor.status
         }
       });
@@ -889,6 +907,25 @@ class DoctorHandler {
     } catch (error) {
       console.error('BIG register SOAP error:', error);
       res.status(500).json({ message: 'Error fetching from BIG register' });
+    }
+  }
+
+  // Get doctor status by userId
+  static async getDoctorStatus(req, res) {
+    try {
+      const { userId } = req.params;
+      const user = await require('../models/user.model').findById(userId);
+      if (!user || user.role !== 'doctor') {
+        return res.status(404).json({ success: false, error: 'User is not a doctor or does not exist' });
+      }
+      const doctor = await Doctor.findOne({ userId });
+      if (!doctor) {
+        return res.json({ success: true, status: 'DETAILS_REQUIRED' });
+      }
+      return res.json({ success: true, status: doctor.status });
+    } catch (error) {
+      logger.error('Error getting doctor status:', error);
+      res.status(500).json({ success: false, error: 'Failed to get doctor status' });
     }
   }
 }

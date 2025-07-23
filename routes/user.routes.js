@@ -72,7 +72,7 @@ const upload = multer({
  */
 router.get('/profile', 
   AuthMiddleware.authenticate,
-  AuthMiddleware.authorize(['patient', 'admin']),
+  AuthMiddleware.authorize(['patient', 'admin','doctor']),
   UserHandler.getProfile
 );
 
@@ -113,7 +113,7 @@ router.get('/profile',
  */
 router.put('/profile', 
   AuthMiddleware.authenticate,
-  AuthMiddleware.authorize(['patient', 'admin']),
+  AuthMiddleware.authorize(['patient', 'admin','doctor']),
   [
     body('firstName').exists().isString().withMessage('First name is required'),
     body('lastName').exists().isString().withMessage('Last name is required'),
@@ -167,5 +167,42 @@ router.post('/profile/picture',
   upload.single('picture'),
   UserHandler.updateProfilePicture
 );
+
+/**
+ * @swagger
+ * /api/v1/users/deactivate/{userId}:
+ *   post:
+ *     summary: Deactivate a user (self or admin)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the user to deactivate
+ *     responses:
+ *       200:
+ *         description: User deactivated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       403:
+ *         description: Not authorized to deactivate this user
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+// Deactivate user (self or admin)
+router.post('/deactivate/:userId', AuthMiddleware.authenticate, AuthMiddleware.authorize(['patient', 'admin','doctor']), UserHandler.deactivateUser);
 
 module.exports = router;

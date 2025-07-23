@@ -195,7 +195,7 @@ class AuthMiddleware {
       }
 
       const doctor = await Doctor.findOne({ userId: req.user._id });
-      if (!doctor || doctor.status !== 'approved') {
+      if (!doctor || doctor.status !== 'VERIFIED') {
         return res.status(403).json({
           success: false,
           error: 'Verified doctor profile required'
@@ -209,6 +209,14 @@ class AuthMiddleware {
         error: 'Failed to verify doctor status'
       });
     }
+  }
+
+  // Middleware to block deactivated users
+  static blockDeactivated(req, res, next) {
+    if (req.user && req.user.status === 'inactive') {
+      return res.status(403).json({ message: 'Your account is deactivated. Please contact support.' });
+    }
+    next();
   }
 }
 

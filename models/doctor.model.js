@@ -12,11 +12,6 @@ const doctorSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
-  verificationStatus: {
-    type: String,
-    enum: ['pending', 'verified', 'rejected'],
-    default: 'pending'
-  },
   specializations: [{
     type: String,
     required: true
@@ -162,8 +157,12 @@ const doctorSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['pending', 'active', 'inactive', 'suspended'],
-    default: 'pending'
+    enum: ['DETAILS_REQUIRED', 'DETAILS_UPDATED', 'VERIFIED', 'REJECTED'],
+    default: 'DETAILS_REQUIRED'
+  },
+  adminComments: {
+    type: String,
+    default: ''
   },
   documents: {
     licenseFile: String,
@@ -205,7 +204,6 @@ doctorSchema.index({ userId: 1 });
 doctorSchema.index({ registrationNumber: 1 }, { unique: true });
 doctorSchema.index({ specializations: 1 });
 doctorSchema.index({ 'clinicLocation.city': 1 });
-doctorSchema.index({ verificationStatus: 1 });
 doctorSchema.index({ status: 1 });
 
 // Index for text search

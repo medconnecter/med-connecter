@@ -44,6 +44,43 @@ const ChatHandler = {
       const { appointmentId } = req.params;
       const { content, type } = req.body;
       const senderId = req.user.id;
+
+      // Get appointment to determine doctor and patient
+      const appointment = await Appointment.findById(appointmentId);
+      if (!appointment) {
+        return res.status(404).json({ message: 'Appointment not found' });
+      }
+
+      // Find doctor userId
+      const doctor = await require('../models/doctor.model').findById(appointment.doctorId);
+      if (!doctor) {
+        return res.status(404).json({ message: 'Doctor not found' });
+      }
+      const doctorUserId = doctor.userId.toString();
+      const patientUserId = appointment.patientId.toString();
+
+      // If sender is patient, enforce message limit
+      if (senderId === patientUserId) {
+        // Find all messages in this chat, sorted by createdAt
+        const messages = await Message.find({ chatId: appointmentId }).sort({ createdAt: 1 });
+        // Count consecutive patient messages since last doctor reply
+        let consecutiveUserMessages = 0;
+        for (let i = messages.length - 1; i >= 0; i--) {
+          const msg = messages[i];
+          if (msg.senderId.toString() === doctorUserId) {
+            break; // Doctor has replied
+          }
+          if (msg.senderId.toString() === patientUserId) {
+            consecutiveUserMessages++;
+          } else {
+            break;
+          }
+        }
+        if (consecutiveUserMessages >= 3) {
+          return res.status(403).json({ message: 'You can only send 3 messages until the doctor replies.' });
+        }
+      }
+
       // Create message
       const message = new Message({
         chatId: appointmentId,

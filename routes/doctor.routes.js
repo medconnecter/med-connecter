@@ -659,7 +659,7 @@ router.get('/profile', AuthMiddleware.authenticate, AuthMiddleware.authorize(['d
  *                   example: Failed to update doctor profile
  */
 router.post('/profile', AuthMiddleware.authenticate,
-  AuthMiddleware.authorize(['doctor']), DoctorHandler.createOrUpdateProfile);
+   DoctorHandler.createOrUpdateProfile);
 
 /**
  * @swagger
@@ -1089,7 +1089,7 @@ router.put('/availability', AuthMiddleware.authenticate, AuthMiddleware.authoriz
  *                       type: string
  *                     status:
  *                       type: string
- *                       enum: [pending, approved, rejected]
+ *                       enum: [pending, verified, rejected]
  *       400:
  *         description: Invalid request data
  *         content:
