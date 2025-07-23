@@ -1330,4 +1330,39 @@ router.post('/liability-insurance',
   }
 );
 
+/**
+ * @swagger
+ * /api/v1/doctors/status/{userId}:
+ *   get:
+ *     summary: Get doctor status by userId
+ *     tags: [Doctors]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The userId of the doctor
+ *     responses:
+ *       200:
+ *         description: Doctor status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 status:
+ *                   type: string
+ *                   description: Doctor status (DETAILS_REQUIRED, DETAILS_UPDATED, VERIFIED, REJECTED)
+ *       404:
+ *         description: User is not a doctor or does not exist
+ *       500:
+ *         description: Failed to get doctor status
+ */
+router.get('/status/:userId',AuthMiddleware.authenticate, DoctorHandler.getDoctorStatus);
+
 module.exports = router;
