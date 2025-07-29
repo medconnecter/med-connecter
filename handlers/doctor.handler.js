@@ -1,11 +1,11 @@
 const Doctor = require('../models/doctor.model');
 const User = require('../models/user.model');
 const Appointment = require('../models/appointment.model');
+const Review = require('../models/review.model');
 const BigRegisterService = require('../services/bigRegister.service');
 const { isValidRegistrationNumber } = require('../utils/helpers');
 const { validationResult } = require('express-validator');
 const logger = require('../utils/logger');
-const mongoose = require('mongoose');
 const axios = require('axios');
 const xml2js = require('xml2js');
 
@@ -13,7 +13,7 @@ const BIG_REGISTER_URL = 'https://webservice.bigregister.cibg.nl/';
 
 class DoctorHandler {
   // Verify registration number
-  static async verifyRegistrationNumber(req, res) {
+  static async verifyRegistrationNumber (req, res) {
     try {
       const { registrationNumber } = req.body;
       const userId = req.user._id.toString(); // Convert to hex string
@@ -23,7 +23,7 @@ class DoctorHandler {
         registrationNumber
       });
 
-      if (!registrationNumber) {x
+      if (!registrationNumber) {
         return res.status(400).json({
           success: false,
           error: 'Registration number is required'
@@ -32,10 +32,10 @@ class DoctorHandler {
 
       // Verify with BIG register
       const verificationResult = await BigRegisterService.verifyRegistrationNumber(registrationNumber);
-      
+
       // Find or create doctor profile using hexId
       let doctor = await Doctor.findOne({ userId });
-      
+
       logger.info('Doctor profile lookup result', {
         userId,
         doctorFound: !!doctor,
@@ -83,9 +83,9 @@ class DoctorHandler {
 
       return res.json({
         success: true,
-        message: verificationResult.success ? 
-          'Registration number verified successfully' : 
-          'Registration number verification failed',
+        message: verificationResult.success
+          ? 'Registration number verified successfully'
+          : 'Registration number verification failed',
         isVerified: verificationResult.success,
         doctor: {
           id: doctor._id,
@@ -103,7 +103,7 @@ class DoctorHandler {
   }
 
   // Create or update doctor profile
-  static async createOrUpdateProfile(req, res) {
+  static async createOrUpdateProfile (req, res) {
     try {
       const userId = req.user._id.toString(); // Convert to hex string
 
@@ -302,7 +302,7 @@ class DoctorHandler {
   }
 
   // Get doctor profile
-  static async getDoctorProfile(req, res) {
+  static async getDoctorProfile (req, res) {
     try {
       const userId = req.user._id.toString(); // Convert to hex string
 
@@ -328,7 +328,7 @@ class DoctorHandler {
   }
 
   // Update doctor profile
-  static async updateProfile(req, res) {
+  static async updateProfile (req, res) {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -355,7 +355,7 @@ class DoctorHandler {
   }
 
   // Update registration number
-  static async verifyRegistration(req, res) {
+  static async verifyRegistration (req, res) {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -387,7 +387,7 @@ class DoctorHandler {
   }
 
   // Get doctor reviews
-  static async getReviews(req, res) {
+  static async getReviews (req, res) {
     try {
       const userId = req.user._id.toString(); // Convert to hex string
       const doctor = await Doctor.findOne({ userId });
@@ -407,7 +407,7 @@ class DoctorHandler {
   }
 
   // Get doctor statistics
-  static async getStatistics(req, res) {
+  static async getStatistics (req, res) {
     try {
       const userId = req.user._id.toString(); // Convert to hex string
       const doctor = await Doctor.findOne({ userId });
@@ -419,7 +419,7 @@ class DoctorHandler {
       }
 
       const totalReviews = await Review.countDocuments({ doctorId: doctor._id });
-      const verifiedReviews = await Review.countDocuments({ 
+      const verifiedReviews = await Review.countDocuments({
         doctorId: doctor._id,
         isVerified: true
       });
@@ -446,7 +446,7 @@ class DoctorHandler {
   }
 
   // Get all specializations
-  static async getSpecializations(req, res) {
+  static async getSpecializations (req, res) {
     try {
       const specializations = await BigRegisterService.getSpecializations();
       res.json({
@@ -462,7 +462,7 @@ class DoctorHandler {
     }
   }
 
-  static async getAppointments(req, res) {
+  static async getAppointments (req, res) {
     try {
       const userId = req.user._id.toString(); // Convert to hex string
       const doctor = await Doctor.findOne({ userId });
@@ -481,7 +481,7 @@ class DoctorHandler {
     }
   }
 
-  static async updateAppointmentStatus(req, res) {
+  static async updateAppointmentStatus (req, res) {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -517,7 +517,7 @@ class DoctorHandler {
   }
 
   // Get all doctors
-  static async getDoctors(req, res) {
+  static async getDoctors (req, res) {
     try {
       const { specialization, verified, page = 1, limit = 10, gender, language, minPrice, maxPrice, rating } = req.query;
       const query = {};
@@ -576,7 +576,7 @@ class DoctorHandler {
   }
 
   // Get doctor by ID (query param)
-  static async getDoctorById(req, res) {
+  static async getDoctorById (req, res) {
     try {
       const { id } = req.query;
       if (!id) {
@@ -603,7 +603,7 @@ class DoctorHandler {
   }
 
   // Get all specialties
-  static async getSpecialties(req, res) {
+  static async getSpecialties (req, res) {
     try {
       // Get unique specializations from the doctor collection
       const specializations = await Doctor.distinct('specializations', { specializations: { $ne: [] } });
@@ -621,15 +621,15 @@ class DoctorHandler {
   }
 
   // Get doctor availability
-  static async getAvailability(req, res) {
+  static async getAvailability (req, res) {
     try {
       const { doctorId, startDate, endDate, gender, language, minPrice, maxPrice, rating } = req.query;
-      
+
       // Validate date parameters
       if (!startDate || !endDate) {
         return res.status(400).json({ success: false, error: 'startDate and endDate are required' });
       }
-      
+
       const start = new Date(startDate);
       const end = new Date(endDate);
       if (isNaN(start) || isNaN(end) || start > end) {
@@ -637,7 +637,7 @@ class DoctorHandler {
       }
 
       let doctors = [];
-      
+
       if (doctorId) {
         // Get availability for specific doctor
         const doctor = await Doctor.findById(doctorId).populate('userId');
@@ -670,32 +670,32 @@ class DoctorHandler {
 
       for (const doctor of doctors) {
         const doctorAvailability = [];
-        
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+
+        for (let d = new Date(start); d <= end; d = new Date(d.getTime() + 24 * 60 * 60 * 1000)) {
           const dateStr = d.toISOString().slice(0, 10);
           const weekday = d.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
           const recurring = doctor.availability.find(a => a.day === weekday);
           let slots = recurring ? [...recurring.slots] : [];
-          
-          const unavail = doctor.unavailability.find(u => u.date.toISOString().slice(0,10) === dateStr);
+
+          const unavail = doctor.unavailability.find(u => u.date.toISOString().slice(0, 10) === dateStr);
           if (unavail) {
             slots = slots.filter(slot => !unavail.slots.some(uSlot => slot.startTime < uSlot.endTime && slot.endTime > uSlot.startTime));
           }
-          
+
           const availabilityEntry = {
             date: dateStr,
             slots
           };
-          
+
           // Add doctor info only when returning multiple doctors
           if (!doctorId) {
             availabilityEntry.doctorId = doctor._id;
             availabilityEntry.doctorName = doctor.userId && doctor.userId.firstName && doctor.userId.lastName ? `${doctor.userId.firstName} ${doctor.userId.lastName}` : '';
           }
-          
+
           doctorAvailability.push(availabilityEntry);
         }
-        
+
         allAvailability.push(...doctorAvailability);
       }
 
@@ -707,7 +707,7 @@ class DoctorHandler {
   }
 
   // Update doctor availability
-  static async updateAvailability(req, res) {
+  static async updateAvailability (req, res) {
     try {
       const userId = req.user._id.toString();
       const doctor = await Doctor.findOne({ userId });
@@ -737,7 +737,7 @@ class DoctorHandler {
   }
 
   // Register doctor
-  static async registerDoctor(req, res) {
+  static async registerDoctor (req, res) {
     try {
       const userId = req.user._id.toString(); // Convert to hex string
 
@@ -800,7 +800,7 @@ class DoctorHandler {
   }
 
   // Add or update unavailability for a doctor (add or update slots for a date)
-  static async addUnavailability(req, res) {
+  static async addUnavailability (req, res) {
     try {
       const userId = req.user._id.toString();
       const doctor = await Doctor.findOne({ userId });
@@ -812,7 +812,7 @@ class DoctorHandler {
         return res.status(400).json({ success: false, error: 'date and slots are required' });
       }
       // Remove any existing unavailability for this date
-      doctor.unavailability = doctor.unavailability.filter(u => u.date.toISOString().slice(0,10) !== new Date(date).toISOString().slice(0,10));
+      doctor.unavailability = doctor.unavailability.filter(u => u.date.toISOString().slice(0, 10) !== new Date(date).toISOString().slice(0, 10));
       // Add new unavailability
       doctor.unavailability.push({ date: new Date(date), slots, reason });
       await doctor.save();
@@ -824,7 +824,7 @@ class DoctorHandler {
   }
 
   // Remove unavailability for a specific date
-  static async removeUnavailability(req, res) {
+  static async removeUnavailability (req, res) {
     try {
       const userId = req.user._id.toString();
       const doctor = await Doctor.findOne({ userId });
@@ -835,7 +835,7 @@ class DoctorHandler {
       if (!date) {
         return res.status(400).json({ success: false, error: 'date is required' });
       }
-      doctor.unavailability = doctor.unavailability.filter(u => u.date.toISOString().slice(0,10) !== new Date(date).toISOString().slice(0,10));
+      doctor.unavailability = doctor.unavailability.filter(u => u.date.toISOString().slice(0, 10) !== new Date(date).toISOString().slice(0, 10));
       await doctor.save();
       res.json({ success: true, unavailability: doctor.unavailability });
     } catch (error) {
@@ -845,7 +845,7 @@ class DoctorHandler {
   }
 
   // Get unavailability for a doctor
-  static async getUnavailability(req, res) {
+  static async getUnavailability (req, res) {
     try {
       const { doctorId } = req.query;
       const doctor = await Doctor.findById(doctorId);
@@ -859,7 +859,7 @@ class DoctorHandler {
     }
   }
 
-  static async getDoctorFromBigRegister(req, res) {
+  static async getDoctorFromBigRegister (req, res) {
     try {
       const { registerNumber } = req.query;
       if (!registerNumber) {
@@ -883,7 +883,7 @@ class DoctorHandler {
       const response = await axios.post(BIG_REGISTER_URL, soapEnvelope, {
         headers: {
           'Content-Type': 'text/xml; charset=utf-8',
-          'SOAPAction': ''
+          SOAPAction: ''
         },
         timeout: 10000
       });
@@ -894,7 +894,7 @@ class DoctorHandler {
         }
         try {
           const body = result['soapenv:Envelope']['soapenv:Body'];
-          const listResponse = body['ns2:ListHcpApprox4Response'] || body['ListHcpApprox4Response'];
+          const listResponse = body['ns2:ListHcpApprox4Response'] || body.ListHcpApprox4Response;
           const returnData = listResponse?.return;
           if (!returnData || !returnData.hcpApproxList || !returnData.hcpApproxList.hcpApprox) {
             return res.status(404).json({ message: 'Doctor not found in BIG register' });
@@ -911,7 +911,7 @@ class DoctorHandler {
   }
 
   // Get doctor status by userId
-  static async getDoctorStatus(req, res) {
+  static async getDoctorStatus (req, res) {
     try {
       const { userId } = req.params;
       const user = await require('../models/user.model').findById(userId);
@@ -930,4 +930,4 @@ class DoctorHandler {
   }
 }
 
-module.exports = DoctorHandler; 
+module.exports = DoctorHandler;

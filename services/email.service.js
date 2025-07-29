@@ -2,14 +2,14 @@ const nodemailer = require('nodemailer');
 const logger = require('../utils/logger');
 
 class EmailService {
-  constructor() {
+  constructor () {
     this.transporter = null;
     this.maxRetries = 3;
     this.retryDelay = 5000; // 5 seconds
     this.initializeTransporter();
   }
 
-  async initializeTransporter(retryCount = 0) {
+  async initializeTransporter (retryCount = 0) {
     try {
       this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
@@ -31,9 +31,8 @@ class EmailService {
         maxConnections: 5,
         maxMessages: 100,
         rateDelta: 1000, // How many messages to send per second
-        rateLimit: 5 ,// Max number of messages per rateDelta
-        logger: true, // Enable logging
-        debug: true 
+        rateLimit: 5, // Max number of messages per rateDelta
+        logger: true // Enable logging
       });
 
       // Verify connection configuration
@@ -63,7 +62,6 @@ class EmailService {
           }
         });
       });
-
     } catch (error) {
       logger.error('Error initializing SMTP transporter:', {
         error: error.message,
@@ -81,7 +79,7 @@ class EmailService {
     }
   }
 
-  async sendEmail({ to, subject, text, html }, retryCount = 0) {
+  async sendEmail ({ to, subject, text, html }, retryCount = 0) {
     try {
       if (!this.transporter) {
         await this.initializeTransporter();
@@ -115,7 +113,7 @@ class EmailService {
     }
   }
 
-  async sendVerificationEmail(to, token) {
+  async sendVerificationEmail (to, token) {
     const subject = 'Verify Your Email';
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
     const html = `
@@ -129,7 +127,7 @@ class EmailService {
     return this.sendEmail({ to, subject, text, html });
   }
 
-  async sendPasswordResetEmail(to, token) {
+  async sendPasswordResetEmail (to, token) {
     const subject = 'Reset Your Password';
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
     const html = `
@@ -143,7 +141,7 @@ class EmailService {
     return this.sendEmail({ to, subject, text, html });
   }
 
-  async sendAppointmentConfirmation(to, appointmentDetails) {
+  async sendAppointmentConfirmation (to, appointmentDetails) {
     const subject = 'Appointment Confirmation';
     const html = `
       <h1>Appointment Confirmed</h1>
@@ -160,7 +158,7 @@ class EmailService {
     return this.sendEmail({ to, subject, text, html });
   }
 
-  async sendOTP(to, otp) {
+  async sendOTP (to, otp) {
     const subject = 'Your OTP Code';
     const html = `
       <h1>Your OTP Code</h1>
@@ -175,4 +173,4 @@ class EmailService {
   }
 }
 
-module.exports = new EmailService(); 
+module.exports = new EmailService();

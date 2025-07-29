@@ -5,7 +5,7 @@ const { NotFoundError, ValidationError } = require('../utils/error.handler');
 const logger = require('../utils/logger');
 
 const NotificationHandler = {
-  async getNotifications(req, res) {
+  async getNotifications (req, res) {
     const { type, read, page = 1, limit = 10 } = req.query;
     const userId = req.user.id;
 
@@ -39,7 +39,7 @@ const NotificationHandler = {
     });
   },
 
-  async markAsRead(req, res) {
+  async markAsRead (req, res) {
     const { id } = req.params;
     const userId = req.user.id;
 
@@ -59,7 +59,7 @@ const NotificationHandler = {
     res.json({ message: 'Notification marked as read', notification });
   },
 
-  async markAllAsRead(req, res) {
+  async markAllAsRead (req, res) {
     const userId = req.user.id;
 
     const result = await Notification.updateMany(
@@ -72,13 +72,13 @@ const NotificationHandler = {
       modifiedCount: result.modifiedCount
     });
 
-    res.json({ 
+    res.json({
       message: 'All notifications marked as read',
       modifiedCount: result.modifiedCount
     });
   },
 
-  async deleteNotification(req, res) {
+  async deleteNotification (req, res) {
     const { id } = req.params;
     const userId = req.user.id;
 
@@ -95,7 +95,7 @@ const NotificationHandler = {
     res.json({ message: 'Notification deleted successfully' });
   },
 
-  async sendTestNotification(req, res) {
+  async sendTestNotification (req, res) {
     const { userId, title, message, type } = req.body;
 
     // Verify user exists
@@ -136,4 +136,4 @@ const NotificationHandler = {
   }
 };
 
-module.exports = NotificationHandler; 
+module.exports = NotificationHandler;

@@ -58,10 +58,10 @@ const sqsClient = new SQSClient({
 });
 
 class AWSService {
-  static async uploadToS3(buffer, filename, mimetype) {
+  static async uploadToS3 (buffer, filename, mimetype) {
     try {
       validateAWSConfig();
-      
+
       const key = `uploads/${Date.now()}-${uuidv4()}-${filename}`;
       const command = new PutObjectCommand({
         Bucket: config.aws.s3.bucket,
@@ -78,10 +78,10 @@ class AWSService {
     }
   }
 
-  static async deleteFromS3(url) {
+  static async deleteFromS3 (url) {
     try {
       validateAWSConfig();
-      
+
       const key = url.split('.com/').pop();
       const command = new DeleteObjectCommand({
         Bucket: config.aws.s3.bucket,
@@ -95,10 +95,10 @@ class AWSService {
     }
   }
 
-  static async sendEmail(to, subject, htmlBody, textBody) {
+  static async sendEmail (to, subject, htmlBody, textBody) {
     try {
       validateAWSConfig();
-      
+
       const command = new SendEmailCommand({
         Destination: {
           ToAddresses: [to]
@@ -129,10 +129,10 @@ class AWSService {
     }
   }
 
-  static async sendSMS(phoneNumber, message) {
+  static async sendSMS (phoneNumber, message) {
     try {
       validateAWSConfig();
-      
+
       const command = new PublishCommand({
         Message: message,
         PhoneNumber: phoneNumber
@@ -145,10 +145,10 @@ class AWSService {
     }
   }
 
-  static async queueJob(queueUrl, payload) {
+  static async queueJob (queueUrl, payload) {
     try {
       validateAWSConfig();
-      
+
       const command = new SendMessageCommand({
         QueueUrl: queueUrl,
         MessageBody: JSON.stringify(payload)

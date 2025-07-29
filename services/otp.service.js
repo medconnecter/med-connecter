@@ -6,17 +6,17 @@ const { generateOTP } = require('../utils/otp');
 const logger = require('../utils/logger');
 
 class OTPService {
-  static async generateAndSendOTP(identifier, type, countryCode = null) {
+  static async generateAndSendOTP (identifier, type, countryCode = null) {
     try {
       // First, expire all existing OTPs for this identifier and type
       await OTP.updateMany(
-        { 
-          identifier, 
+        {
+          identifier,
           type,
-          isExpired: false 
+          isExpired: false
         },
-        { 
-          $set: { 
+        {
+          $set: {
             isExpired: true,
             expiredAt: new Date()
           }
@@ -58,7 +58,7 @@ class OTPService {
     }
   }
 
-  static async verifyOTP(identifier, otp, type, countryCode = null) {
+  static async verifyOTP (identifier, otp, type, countryCode = null) {
     try {
       // Find the most recent unexpired OTP
       const otpRecord = await OTP.findOne({
@@ -91,12 +91,13 @@ class OTPService {
     }
   }
 
-  static async resendOTP(identifier, type, countryCode = null) {
+  static async resendOTP (identifier, type, countryCode = null) {
     try {
       // Find user based on identifier type
       const user = await User.findOne(
-        type === 'email' ? { email: identifier } : 
-        { 'phone.number': identifier }
+        type === 'email'
+          ? { email: identifier }
+          : { 'phone.number': identifier }
       );
 
       if (!user) {
@@ -113,9 +114,9 @@ class OTPService {
 
       if (existingOTP) {
         const timeLeft = Math.ceil((existingOTP.expiresAt - new Date()) / 1000 / 60);
-        return { 
-          success: false, 
-          message: `Please wait ${timeLeft} minutes before requesting a new OTP` 
+        return {
+          success: false,
+          message: `Please wait ${timeLeft} minutes before requesting a new OTP`
         };
       }
 
@@ -127,7 +128,7 @@ class OTPService {
     }
   }
 
-  static async getOTPAttempts(identifier, type) {
+  static async getOTPAttempts (identifier, type) {
     try {
       const attempts = await OTP.aggregate([
         {
@@ -153,7 +154,7 @@ class OTPService {
     }
   }
 
-  static async checkOTP(identifier, type) {
+  static async checkOTP (identifier, type) {
     try {
       // Find the most recent unexpired OTP
       const otpRecord = await OTP.findOne({
@@ -174,7 +175,7 @@ class OTPService {
   }
 
   // Clean up expired OTPs
-  static async cleanupExpiredOTPs() {
+  static async cleanupExpiredOTPs () {
     try {
       const result = await OTP.updateMany(
         {
@@ -198,4 +199,4 @@ class OTPService {
   }
 }
 
-module.exports = OTPService; 
+module.exports = OTPService;

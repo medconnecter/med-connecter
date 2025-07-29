@@ -55,7 +55,7 @@ const chatSchema = new mongoose.Schema({
 });
 
 // Update the updatedAt timestamp before saving
-chatSchema.pre('save', function(next) {
+chatSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });

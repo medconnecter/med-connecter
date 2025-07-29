@@ -15,7 +15,6 @@ const versionMiddleware = require('./middleware/version.middleware');
 const sessionMiddleware = require('./middleware/session.middleware');
 const AuthMiddleware = require('./middleware/auth.middleware');
 
-
 // Debug environment variables
 logger.info('Environment variables:', {
   PORT: process.env.PORT,
@@ -23,7 +22,6 @@ logger.info('Environment variables:', {
   MONGODB_URI: process.env.MONGODB_URI ? '***' : undefined,
   CONFIG_PORT: config.get('port')
 });
-
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -55,7 +53,7 @@ const connectDB = async () => {
     await mongoose.connect(process.env.MONGODB_URI, {
       serverSelectionTimeoutMS: 10000, // Increased timeout
       socketTimeoutMS: 45000,
-      family: 4,  // Force IPv4
+      family: 4, // Force IPv4
       retryWrites: true,
       w: 'majority'
     });
@@ -86,14 +84,13 @@ if (process.env.NODE_ENV === 'production') {
   app.use(helmet());
 } else {
   app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginEmbedderPolicy: false,
     contentSecurityPolicy: false
   }));
 }
 
 app.use(compression());
-
 
 // CORS configuration
 const corsOptions = {
@@ -103,7 +100,6 @@ const corsOptions = {
   credentials: true,
   maxAge: 86400 // 24 hours
 };
-
 
 // Apply CORS middleware
 app.use(cors());
@@ -162,7 +158,7 @@ Object.keys(swaggerSpec.paths).forEach(path => {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   explorer: true,
   customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: "Med Connecter API Documentation",
+  customSiteTitle: 'Med Connecter API Documentation',
   swaggerOptions: {
     persistAuthorization: true,
     displayRequestDuration: true,
@@ -241,4 +237,4 @@ process.on('unhandledRejection', (error) => {
   process.exit(1);
 });
 
-module.exports = app; 
+module.exports = app;

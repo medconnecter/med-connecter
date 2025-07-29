@@ -19,4 +19,4 @@ logger.info('AWS Configuration:', {
 
 module.exports = {
   snsClient
-}; 
+};

@@ -18,12 +18,12 @@ const saveMessage = async (appointmentId, senderId, content, type = 'text', file
     if (!chat) {
       throw new Error('Chat not found for this appointment');
     }
-    
+
     // Make sure the sender is a participant
     if (!chat.participants.some(p => p.toString() === senderId.toString())) {
       throw new Error('Sender is not a participant in this chat');
     }
-    
+
     // Create the message
     const message = {
       senderId: mongoose.Types.ObjectId(senderId),
@@ -31,17 +31,17 @@ const saveMessage = async (appointmentId, senderId, content, type = 'text', file
       type,
       timestamp: new Date()
     };
-    
+
     if (fileUrl && (type === 'file' || type === 'image')) {
       message.fileUrl = fileUrl;
     }
-    
+
     // Add message to chat
     chat.messages.push(message);
     chat.lastActivity = new Date();
-    
+
     await chat.save();
-    
+
     return message;
   } catch (error) {
     console.error('Error saving chat message:', error);
@@ -64,18 +64,18 @@ const getMessages = async (appointmentId, userId, limit = 50, skip = 0) => {
     if (!chat) {
       throw new Error('Chat not found for this appointment');
     }
-    
+
     // Make sure the user is a participant
     if (!chat.participants.some(p => p.toString() === userId.toString())) {
       throw new Error('User is not a participant in this chat');
     }
-    
+
     // Get messages with pagination
     const messages = chat.messages
       .sort((a, b) => b.timestamp - a.timestamp) // Sort by newest first
       .slice(skip, skip + limit)
       .reverse(); // Reverse back to chronological order
-    
+
     return messages;
   } catch (error) {
     console.error('Error retrieving chat messages:', error);
@@ -96,12 +96,12 @@ const markMessagesAsRead = async (appointmentId, userId) => {
     if (!chat) {
       throw new Error('Chat not found for this appointment');
     }
-    
+
     // Make sure the user is a participant
     if (!chat.participants.some(p => p.toString() === userId.toString())) {
       throw new Error('User is not a participant in this chat');
     }
-    
+
     // Find messages not sent by this user and mark them as read
     let count = 0;
     chat.messages.forEach(message => {
@@ -110,11 +110,11 @@ const markMessagesAsRead = async (appointmentId, userId) => {
         count++;
       }
     });
-    
+
     if (count > 0) {
       await chat.save();
     }
-    
+
     return count;
   } catch (error) {
     console.error('Error marking messages as read:', error);

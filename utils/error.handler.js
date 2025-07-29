@@ -1,7 +1,7 @@
 const logger = require('./logger');
 
 class AppError extends Error {
-  constructor(message, statusCode, errorCode) {
+  constructor (message, statusCode, errorCode) {
     super(message);
     this.statusCode = statusCode;
     this.errorCode = errorCode;
@@ -13,36 +13,36 @@ class AppError extends Error {
 }
 
 class ValidationError extends AppError {
-  constructor(message) {
+  constructor (message) {
     super(message, 400, 'VALIDATION_ERROR');
     this.errors = [];
   }
 
-  addError(field, message) {
+  addError (field, message) {
     this.errors.push({ field, message });
   }
 }
 
 class AuthenticationError extends AppError {
-  constructor(message = 'Authentication failed') {
+  constructor (message = 'Authentication failed') {
     super(message, 401, 'AUTHENTICATION_ERROR');
   }
 }
 
 class AuthorizationError extends AppError {
-  constructor(message = 'Not authorized to perform this action') {
+  constructor (message = 'Not authorized to perform this action') {
     super(message, 403, 'AUTHORIZATION_ERROR');
   }
 }
 
 class NotFoundError extends AppError {
-  constructor(message = 'Resource not found') {
+  constructor (message = 'Resource not found') {
     super(message, 404, 'NOT_FOUND_ERROR');
   }
 }
 
 class ConflictError extends AppError {
-  constructor(message = 'Resource already exists') {
+  constructor (message = 'Resource already exists') {
     super(message, 409, 'CONFLICT_ERROR');
   }
 }
@@ -97,4 +97,4 @@ module.exports = {
   NotFoundError,
   ConflictError,
   errorHandler
-}; 
+};

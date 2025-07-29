@@ -48,4 +48,4 @@ module.exports = {
       apis: ['./docs/swagger/*.js'] // Path to the API docs
     }
   }
-}; 
+};

@@ -2,12 +2,12 @@ const { s3Client, getSignedUrl } = require('../../config/aws.config');
 const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
 class S3Service {
-  constructor() {
+  constructor () {
     this.bucketName = process.env.AWS_S3_BUCKET_NAME;
   }
 
   // Generate pre-signed URL for file upload
-  async getUploadUrl(key, contentType, expiresIn = 3600) {
+  async getUploadUrl (key, contentType, expiresIn = 3600) {
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key,
@@ -18,7 +18,7 @@ class S3Service {
   }
 
   // Generate pre-signed URL for file download
-  async getDownloadUrl(key, expiresIn = 3600) {
+  async getDownloadUrl (key, expiresIn = 3600) {
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: key
@@ -28,7 +28,7 @@ class S3Service {
   }
 
   // Upload file directly to S3
-  async uploadFile(key, body, contentType) {
+  async uploadFile (key, body, contentType) {
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key,
@@ -40,7 +40,7 @@ class S3Service {
   }
 
   // Delete file from S3
-  async deleteFile(key) {
+  async deleteFile (key) {
     const command = new DeleteObjectCommand({
       Bucket: this.bucketName,
       Key: key
@@ -50,4 +50,4 @@ class S3Service {
   }
 }
 
-module.exports = new S3Service(); 
+module.exports = new S3Service();

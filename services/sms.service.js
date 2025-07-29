@@ -3,7 +3,7 @@ const { snsClient } = require('../utils/aws');
 const logger = require('../utils/logger');
 
 class SMSService {
-  constructor() {
+  constructor () {
     this.snsClient = snsClient;
     // Common country codes with their expected formats
     this.validCountryCodes = {
@@ -26,7 +26,7 @@ class SMSService {
     };
   }
 
-  validatePhoneNumber(phoneNumber, countryCode) {
+  validatePhoneNumber (phoneNumber, countryCode) {
     // Validate country code format
     if (!countryCode.startsWith('+')) {
       throw new Error('Country code must start with +');
@@ -53,7 +53,7 @@ class SMSService {
     return true;
   }
 
-  async sendSMS(phoneNumber, message, countryCode = '+91') {
+  async sendSMS (phoneNumber, message, countryCode = '+91') {
     try {
       // Validate phone number and country code
       this.validatePhoneNumber(phoneNumber, countryCode);
@@ -61,7 +61,7 @@ class SMSService {
       // Format phone number to E.164 format
       const formattedNumber = this.formatPhoneNumber(phoneNumber, countryCode);
       logger.info('Sending SMS to:', { formattedNumber, originalNumber: phoneNumber, countryCode });
-      
+
       const params = {
         Message: message,
         PhoneNumber: formattedNumber,
@@ -86,50 +86,50 @@ class SMSService {
         message: error.message,
         code: error.code,
         requestId: error.$metadata?.requestId,
-        phoneNumber: phoneNumber,
-        countryCode: countryCode
+        phoneNumber,
+        countryCode
       });
       throw error;
     }
   }
 
-  async sendOTP(phoneNumber, otp, countryCode = '+91') {
+  async sendOTP (phoneNumber, otp, countryCode = '+91') {
     const message = `Your Med Connecter verification code is: ${otp}. This code will expire in 5 minutes.`;
     return this.sendSMS(phoneNumber, message, countryCode);
   }
 
-  async sendWelcomeSMS(phoneNumber, firstName, countryCode = '+91') {
+  async sendWelcomeSMS (phoneNumber, firstName, countryCode = '+91') {
     const message = `Welcome to Med Connecter, ${firstName}! Thank you for joining our platform. Please verify your phone number to get started.`;
     return this.sendSMS(phoneNumber, message, countryCode);
   }
 
-  async sendVerificationSMS(phoneNumber, countryCode = '+91') {
+  async sendVerificationSMS (phoneNumber, countryCode = '+91') {
     const message = 'Please verify your phone number to complete your registration on Med Connecter.';
     return this.sendSMS(phoneNumber, message, countryCode);
   }
 
-  async sendAppointmentReminder(phoneNumber, appointmentDetails, countryCode = '+91') {
+  async sendAppointmentReminder (phoneNumber, appointmentDetails, countryCode = '+91') {
     const message = `Reminder: You have an appointment with Dr. ${appointmentDetails.doctorName} on ${appointmentDetails.date} at ${appointmentDetails.time}.`;
     return this.sendSMS(phoneNumber, message, countryCode);
   }
 
-  formatPhoneNumber(phoneNumber, countryCode) {
+  formatPhoneNumber (phoneNumber, countryCode) {
     // Remove any non-digit characters
     const digits = phoneNumber.replace(/\D/g, '');
-    
+
     // If the number starts with 0, replace it with the country code
     if (digits.startsWith('0')) {
       return `${countryCode}${digits.slice(1)}`;
     }
-    
+
     // If the number doesn't start with +, add the country code
     if (!phoneNumber.startsWith('+')) {
       return `${countryCode}${digits}`;
     }
-    
+
     // If the number already has a country code, return as is
     return phoneNumber;
   }
 }
 
-module.exports = new SMSService(); 
+module.exports = new SMSService();

@@ -70,9 +70,9 @@ const upload = multer({
  *       500:
  *         description: Server error
  */
-router.get('/profile', 
+router.get('/profile',
   AuthMiddleware.authenticate,
-  AuthMiddleware.authorize(['patient', 'admin','doctor']),
+  AuthMiddleware.authorize(['patient', 'admin', 'doctor']),
   UserHandler.getProfile
 );
 
@@ -111,9 +111,9 @@ router.get('/profile',
  *       500:
  *         description: Server error
  */
-router.put('/profile', 
+router.put('/profile',
   AuthMiddleware.authenticate,
-  AuthMiddleware.authorize(['patient', 'admin','doctor']),
+  AuthMiddleware.authorize(['patient', 'admin', 'doctor']),
   [
     body('firstName').exists().isString().withMessage('First name is required'),
     body('lastName').exists().isString().withMessage('Last name is required'),
@@ -163,7 +163,7 @@ router.put('/profile',
  */
 router.post('/profile/picture',
   AuthMiddleware.authenticate,
-  AuthMiddleware.authorize(['patient', 'admin','doctor']),
+  AuthMiddleware.authorize(['patient', 'admin', 'doctor']),
   upload.single('picture'),
   UserHandler.updateProfilePicture
 );
@@ -203,6 +203,6 @@ router.post('/profile/picture',
  *         description: Server error
  */
 // Deactivate user (self or admin)
-router.post('/deactivate/:userId', AuthMiddleware.authenticate, AuthMiddleware.authorize(['patient', 'admin','doctor']), UserHandler.deactivateUser);
+router.post('/deactivate/:userId', AuthMiddleware.authenticate, AuthMiddleware.authorize(['patient', 'admin', 'doctor']), UserHandler.deactivateUser);
 
 module.exports = router;

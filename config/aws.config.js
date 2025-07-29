@@ -26,4 +26,4 @@ module.exports = {
   s3Client,
   getSignedUrl,
   awsConfig
-}; 
+};

@@ -106,7 +106,7 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
-router.get('/', 
+router.get('/',
   AuthMiddleware.authenticate,
   async (req, res, next) => {
     try {
@@ -152,7 +152,7 @@ router.get('/',
  *       500:
  *         description: Server error
  */
-router.put('/:id/read', 
+router.put('/:id/read',
   AuthMiddleware.authenticate,
   async (req, res, next) => {
     try {
@@ -195,7 +195,7 @@ router.put('/:id/read',
  *       500:
  *         description: Server error
  */
-router.put('/read-all', 
+router.put('/read-all',
   AuthMiddleware.authenticate,
   async (req, res, next) => {
     try {
@@ -236,7 +236,7 @@ router.put('/read-all',
  *       500:
  *         description: Server error
  */
-router.delete('/:id', 
+router.delete('/:id',
   AuthMiddleware.authenticate,
   async (req, res, next) => {
     try {
@@ -295,7 +295,7 @@ router.delete('/:id',
  *       500:
  *         description: Server error
  */
-router.post('/send-test', 
+router.post('/send-test',
   AuthMiddleware.authenticate,
   AuthMiddleware.authorize(['admin']),
   [

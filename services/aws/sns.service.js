@@ -1,17 +1,17 @@
 const { snsClient } = require('../../config/aws.config');
-const { 
+const {
   PublishCommand,
   CreateTopicCommand,
   SubscribeCommand
 } = require('@aws-sdk/client-sns');
 
 class SNSService {
-  constructor() {
+  constructor () {
     this.topicArn = process.env.AWS_SNS_TOPIC_ARN;
   }
 
   // Create a new SNS topic
-  async createTopic(topicName) {
+  async createTopic (topicName) {
     const command = new CreateTopicCommand({
       Name: topicName
     });
@@ -21,7 +21,7 @@ class SNSService {
   }
 
   // Subscribe an endpoint to the topic
-  async subscribe(protocol, endpoint) {
+  async subscribe (protocol, endpoint) {
     const command = new SubscribeCommand({
       TopicArn: this.topicArn,
       Protocol: protocol, // 'email', 'sms', 'https', etc.
@@ -32,7 +32,7 @@ class SNSService {
   }
 
   // Send notification
-  async publish(message, subject = null) {
+  async publish (message, subject = null) {
     const params = {
       Message: typeof message === 'string' ? message : JSON.stringify(message),
       TopicArn: this.topicArn
@@ -47,7 +47,7 @@ class SNSService {
   }
 
   // Send SMS directly (without topic)
-  async sendSMS(phoneNumber, message) {
+  async sendSMS (phoneNumber, message) {
     const command = new PublishCommand({
       Message: message,
       PhoneNumber: phoneNumber
@@ -57,4 +57,4 @@ class SNSService {
   }
 }
 
-module.exports = new SNSService(); 
+module.exports = new SNSService();

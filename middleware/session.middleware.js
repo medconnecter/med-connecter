@@ -9,14 +9,14 @@ const sessionMiddleware = async (req, res, next) => {
     // Session is already validated in auth middleware
     // Just handle refresh logic here
     const session = req.session;
-    
+
     if (!session) {
       return next();
     }
 
     const now = Date.now();
     const sessionAge = now - session.lastActivity;
-    
+
     // Check if session is expired
     if (sessionAge > SESSION_EXPIRY) {
       await Session.findByIdAndDelete(session._id);
@@ -31,7 +31,7 @@ const sessionMiddleware = async (req, res, next) => {
       // Extend session expiry
       session.lastActivity = now;
       await session.save();
-      
+
       // Add refresh header to response
       res.setHeader('X-Session-Refresh', 'true');
     }
@@ -47,4 +47,4 @@ const sessionMiddleware = async (req, res, next) => {
   }
 };
 
-module.exports = sessionMiddleware; 
+module.exports = sessionMiddleware;

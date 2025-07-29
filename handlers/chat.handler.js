@@ -4,7 +4,7 @@ const Appointment = require('../models/appointment.model');
 const AWSService = require('../services/aws.service');
 
 const ChatHandler = {
-  async getChatMessages(req, res) {
+  async getChatMessages (req, res) {
     try {
       const { appointmentId } = req.params;
       const { page = 1, limit = 50 } = req.query;
@@ -39,7 +39,7 @@ const ChatHandler = {
     }
   },
 
-  async sendMessage(req, res) {
+  async sendMessage (req, res) {
     try {
       const { appointmentId } = req.params;
       const { content, type } = req.body;
@@ -107,7 +107,7 @@ const ChatHandler = {
     }
   },
 
-  async uploadFile(req, res) {
+  async uploadFile (req, res) {
     try {
       const { appointmentId } = req.params;
       const senderId = req.user.id;
@@ -149,7 +149,7 @@ const ChatHandler = {
     }
   },
 
-  async getUnreadCount(req, res) {
+  async getUnreadCount (req, res) {
     try {
       const userId = req.user.id;
       // Get all chats where user is a participant
@@ -173,4 +173,4 @@ const ChatHandler = {
   }
 };
 
-module.exports = ChatHandler; 
+module.exports = ChatHandler;

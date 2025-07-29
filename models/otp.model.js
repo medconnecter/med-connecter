@@ -44,7 +44,7 @@ otpSchema.index({ identifier: 1, type: 1, isExpired: 1 });
 otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 // Pre-save middleware
-otpSchema.pre('save', function(next) {
+otpSchema.pre('save', function (next) {
   if (this.isExpired && !this.expiredAt) {
     this.expiredAt = new Date();
   }
@@ -53,4 +53,4 @@ otpSchema.pre('save', function(next) {
 
 const OTP = mongoose.model('OTP', otpSchema);
 
-module.exports = OTP; 
+module.exports = OTP;

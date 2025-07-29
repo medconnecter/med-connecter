@@ -56,15 +56,15 @@ videoSessionSchema.index({ patientId: 1, scheduledAt: 1 });
 videoSessionSchema.index({ status: 1 });
 
 // Add methods if needed
-videoSessionSchema.methods.isActive = function() {
+videoSessionSchema.methods.isActive = function () {
   return this.status === 'active';
 };
 
-videoSessionSchema.methods.canJoin = function() {
+videoSessionSchema.methods.canJoin = function () {
   return ['scheduled', 'active'].includes(this.status);
 };
 
-videoSessionSchema.methods.getDuration = function() {
+videoSessionSchema.methods.getDuration = function () {
   if (this.startedAt && this.endedAt) {
     return Math.round((this.endedAt - this.startedAt) / 1000);
   }

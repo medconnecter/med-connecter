@@ -7,7 +7,7 @@ const path = require('path');
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 5 * 1024 * 1024 // 5MB limit
   },
   fileFilter: (_req, file, cb) => {
     // Check file type
@@ -65,7 +65,7 @@ const uploadToS3 = async (req, res, next) => {
 const getUploadUrl = async (req, res) => {
   try {
     const { filename, contentType } = req.body;
-    
+
     if (!filename || !contentType) {
       return res.status(400).json({
         error: true,
@@ -96,4 +96,4 @@ module.exports = {
   upload,
   uploadToS3,
   getUploadUrl
-}; 
+};

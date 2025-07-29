@@ -11,7 +11,7 @@ const register = async (req, res, next) => {
 
     // Validate phone number format
     if (!phone || !phone.number || !phone.countryCode) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Phone number and country code are required',
         details: {
           phone: {
@@ -26,7 +26,7 @@ const register = async (req, res, next) => {
     try {
       smsService.validatePhoneNumber(phone.number, phone.countryCode);
     } catch (error) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Invalid phone number',
         details: {
           phone: {
@@ -82,4 +82,4 @@ const register = async (req, res, next) => {
 
 module.exports = {
   register
-}; 
+};

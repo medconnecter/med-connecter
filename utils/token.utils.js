@@ -15,4 +15,4 @@ const generateVerificationToken = (userId) => {
 
 module.exports = {
   generateVerificationToken
-}; 
+};

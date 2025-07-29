@@ -287,7 +287,7 @@ const router = express.Router();
  * @desc Get payment status by ID
  * @access Private
  */
-router.get('/:id', 
+router.get('/:id',
   AuthMiddleware.authenticate,
   PaymentHandler.getPaymentById
 );
@@ -341,7 +341,7 @@ router.get('/:id',
  *       500:
  *         description: Server error
  */
-router.post('/initiate', 
+router.post('/initiate',
   AuthMiddleware.authenticate,
   [
     body('appointmentId').isMongoId().withMessage('Invalid appointment ID'),
@@ -392,7 +392,7 @@ router.post('/initiate',
  *       500:
  *         description: Server error
  */
-router.get('/:id', 
+router.get('/:id',
   AuthMiddleware.authenticate,
   async (req, res, next) => {
     try {
@@ -456,7 +456,7 @@ router.get('/:id',
  *       500:
  *         description: Server error
  */
-router.post('/:id/refund', 
+router.post('/:id/refund',
   AuthMiddleware.authenticate,
   AuthMiddleware.authorize(['admin']),
   [
@@ -508,7 +508,7 @@ router.post('/:id/refund',
  *       500:
  *         description: Server error
  */
-router.post('/webhook', 
+router.post('/webhook',
   async (req, res, next) => {
     try {
       logger.info('Processing payment webhook', {

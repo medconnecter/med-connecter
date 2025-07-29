@@ -19,4 +19,4 @@ const finalConfig = {
   }
 };
 
-module.exports = finalConfig; 
+module.exports = finalConfig;

@@ -41,23 +41,23 @@ sessionSchema.index({ tokenId: 1 }, { unique: true });
 sessionSchema.index({ lastActivity: 1 });
 
 // Method to check if session is expired (e.g., 24 hours of inactivity)
-sessionSchema.methods.isExpired = function() {
+sessionSchema.methods.isExpired = function () {
   const inactiveThreshold = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
   return Date.now() - this.lastActivity > inactiveThreshold;
 };
 
 // Add static method to clean up expired sessions
-sessionSchema.statics.cleanupExpiredSessions = async function() {
+sessionSchema.statics.cleanupExpiredSessions = async function () {
   const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
   await this.deleteMany({ lastActivity: { $lt: thirtyMinutesAgo } });
 };
 
 // Add pre-save middleware to update lastActivity
-sessionSchema.pre('save', function(next) {
+sessionSchema.pre('save', function (next) {
   this.lastActivity = new Date();
   next();
 });
 
 const Session = mongoose.model('Session', sessionSchema);
 
-module.exports = Session; 
+module.exports = Session;

@@ -325,7 +325,7 @@ router.post('/sessions',
  * @desc Create a new video session
  * @access Private
  */
-router.post('/session', 
+router.post('/session',
   AuthMiddleware.authenticate,
   [
     body('appointmentId').isMongoId().withMessage('Invalid appointment ID')
@@ -348,7 +348,7 @@ router.post('/session',
  * @desc Join a video session
  * @access Private
  */
-router.post('/join/:sessionId', 
+router.post('/join/:sessionId',
   AuthMiddleware.authenticate,
   VideoHandler.joinSession
 );
@@ -358,7 +358,7 @@ router.post('/join/:sessionId',
  * @desc End a video session
  * @access Private
  */
-router.post('/end/:sessionId', 
+router.post('/end/:sessionId',
   AuthMiddleware.authenticate,
   VideoHandler.endSession
 );
@@ -396,7 +396,7 @@ router.post('/end/:sessionId',
  *       500:
  *         description: Server error
  */
-router.get('/sessions/:sessionId', 
+router.get('/sessions/:sessionId',
   AuthMiddleware.authenticate,
   async (req, res, next) => {
     try {
@@ -453,7 +453,7 @@ router.get('/sessions/:sessionId',
  *       500:
  *         description: Server error
  */
-router.post('/sessions/:sessionId/join', 
+router.post('/sessions/:sessionId/join',
   AuthMiddleware.authenticate,
   async (req, res, next) => {
     try {
@@ -503,7 +503,7 @@ router.post('/sessions/:sessionId/join',
  *       500:
  *         description: Server error
  */
-router.post('/sessions/:sessionId/end', 
+router.post('/sessions/:sessionId/end',
   AuthMiddleware.authenticate,
   async (req, res, next) => {
     try {

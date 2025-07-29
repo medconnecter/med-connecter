@@ -1,5 +1,7 @@
 const Notification = require('../models/notification.model');
 const User = require('../models/user.model');
+const Doctor = require('../models/doctor.model');
+const Appointment = require('../models/appointment.model');
 const { sendEmail, sendSMS } = require('./aws.service');
 const snsService = require('./aws/sns.service');
 const sqsService = require('./aws/sqs.service');
@@ -24,13 +26,13 @@ const sendNotification = async (userId, title, message, type = 'email', relatedT
       status: 'pending',
       relatedTo
     });
-    
+
     // Get the user for contact info
     const user = await User.findById(userId);
     if (!user) {
       throw new Error('User not found');
     }
-    
+
     // Send the notification based on type
     if (type === 'email' && user.email) {
       await sendEmail(
@@ -53,7 +55,7 @@ const sendNotification = async (userId, title, message, type = 'email', relatedT
     } else {
       notification.status = 'failed';
     }
-    
+
     await notification.save();
     return notification;
   } catch (error) {
@@ -72,23 +74,23 @@ const sendAppointmentReminders = async () => {
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setHours(now.getHours() + 24);
-    
+
     const upcomingAppointments = await Appointment.find({
       scheduledAt: { $gt: now, $lt: tomorrow },
       status: 'confirmed'
     });
-    
+
     let reminderCount = 0;
-    
+
     // Send reminders for each appointment
     for (const appointment of upcomingAppointments) {
       const [patient, doctor] = await Promise.all([
         User.findById(appointment.patientId),
         Doctor.findById(appointment.doctorId).populate('userId')
       ]);
-      
+
       if (!patient || !doctor) continue;
-      
+
       // Format appointment time
       const apptTime = new Date(appointment.scheduledAt);
       const timeString = apptTime.toLocaleTimeString('en-US', {
@@ -100,7 +102,7 @@ const sendAppointmentReminders = async () => {
         month: 'long',
         day: 'numeric'
       });
-      
+
       // Send patient reminder
       await sendNotification(
         patient._id,
@@ -109,7 +111,7 @@ const sendAppointmentReminders = async () => {
         'email',
         { model: 'Appointment', id: appointment._id }
       );
-      
+
       // Send SMS reminder as well
       await sendNotification(
         patient._id,
@@ -118,7 +120,7 @@ const sendAppointmentReminders = async () => {
         'sms',
         { model: 'Appointment', id: appointment._id }
       );
-      
+
       // Send doctor reminder
       await sendNotification(
         doctor.userId._id,
@@ -127,10 +129,10 @@ const sendAppointmentReminders = async () => {
         'email',
         { model: 'Appointment', id: appointment._id }
       );
-      
+
       reminderCount += 2; // Count both notifications
     }
-    
+
     return reminderCount;
   } catch (error) {
     console.error('Error sending appointment reminders:', error);
@@ -152,7 +154,7 @@ const getUserNotifications = async (userId, limit = 20, skip = 0) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-    
+
     return notifications;
   } catch (error) {
     console.error('Error fetching user notifications:', error);
@@ -173,15 +175,15 @@ const markNotificationAsRead = async (notificationId, userId) => {
       _id: notificationId,
       userId
     });
-    
+
     if (!notification) {
       throw new Error('Notification not found or unauthorized');
     }
-    
+
     // Mark as read
     notification.read = true;
     await notification.save();
-    
+
     return notification;
   } catch (error) {
     console.error('Error marking notification as read:', error);
@@ -191,7 +193,7 @@ const markNotificationAsRead = async (notificationId, userId) => {
 
 class NotificationService {
   // Send immediate notification
-  async sendNotification(userId, notification) {
+  async sendNotification (userId, notification) {
     try {
       // Send to SNS topic
       await snsService.publish({
@@ -219,7 +221,7 @@ class NotificationService {
   }
 
   // Send appointment reminder
-  async sendAppointmentReminder(appointment) {
+  async sendAppointmentReminder (appointment) {
     const message = {
       type: 'APPOINTMENT_REMINDER',
       appointmentId: appointment._id,
@@ -245,7 +247,7 @@ class NotificationService {
   }
 
   // Send chat notification
-  async sendChatNotification(chatMessage) {
+  async sendChatNotification (chatMessage) {
     const notification = {
       type: 'NEW_CHAT_MESSAGE',
       message: `New message from ${chatMessage.senderName}`,
@@ -260,7 +262,7 @@ class NotificationService {
   }
 
   // Send payment notification
-  async sendPaymentNotification(payment) {
+  async sendPaymentNotification (payment) {
     const notification = {
       type: 'PAYMENT_STATUS',
       message: `Payment ${payment.status} for appointment #${payment.appointmentId}`,

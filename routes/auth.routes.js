@@ -272,7 +272,7 @@ router.post('/logout/all', AuthMiddleware.authenticate, AuthHandler.logoutAll);
 router.post('/refresh-session', AuthMiddleware.authenticate, async (req, res) => {
   try {
     const session = req.session;
-    
+
     if (!session) {
       return res.status(401).json({
         status: 'error',
@@ -359,4 +359,4 @@ router.post('/verify/status', AuthHandler.checkVerificationStatus);
  */
 router.post('/verify/resend', AuthHandler.resendVerificationOTP);
 
-module.exports = router; 
+module.exports = router;

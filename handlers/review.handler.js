@@ -11,7 +11,7 @@ const ReviewHandler = {
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async createReview(req, res) {
+  async createReview (req, res) {
     try {
       const { doctorId, appointmentId, rating, comment } = req.body;
       const userId = req.user.userId;
@@ -70,7 +70,7 @@ const ReviewHandler = {
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async getDoctorReviews(req, res) {
+  async getDoctorReviews (req, res) {
     try {
       const { doctorId } = req.params;
       const { page = 1, limit = 10 } = req.query;
@@ -155,7 +155,7 @@ const ReviewHandler = {
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async getUserReviews(req, res) {
+  async getUserReviews (req, res) {
     try {
       const userId = req.user.userId;
       const { page = 1, limit = 10 } = req.query;
@@ -197,7 +197,7 @@ const ReviewHandler = {
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async updateReview(req, res) {
+  async updateReview (req, res) {
     try {
       const { reviewId } = req.params;
       const { rating, comment } = req.body;
@@ -238,7 +238,7 @@ const ReviewHandler = {
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  async deleteReview(req, res) {
+  async deleteReview (req, res) {
     try {
       const { reviewId } = req.params;
       const userId = req.user.userId;
@@ -268,7 +268,7 @@ const ReviewHandler = {
     }
   },
 
-  async getMyReviews(req, res) {
+  async getMyReviews (req, res) {
     try {
       // TODO: Implement get my reviews logic
       res.json({ message: 'My reviews fetched (stub)' });
@@ -279,4 +279,4 @@ const ReviewHandler = {
   }
 };
 
-module.exports = ReviewHandler; 
+module.exports = ReviewHandler;

@@ -81,13 +81,13 @@ const userSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  },
+  }
 }, {
   timestamps: true
 });
 
 // Virtual for full name
-userSchema.virtual('fullName').get(function() {
+userSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
@@ -99,7 +99,7 @@ userSchema.index({ lastLogin: 1 });
 userSchema.index({ createdAt: 1 });
 
 // Pre-save middleware
-userSchema.pre('save', function(next) {
+userSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });

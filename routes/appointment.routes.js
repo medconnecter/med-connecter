@@ -194,7 +194,7 @@ router.get('/', AuthMiddleware.authenticate, AppointmentHandler.getAppointments)
  *       500:
  *         description: Server error
  */
-router.post('/', 
+router.post('/',
   AuthMiddleware.authenticate,
   [
     body('doctorId').isMongoId().withMessage('Invalid doctor ID'),
@@ -248,7 +248,7 @@ router.post('/',
  *       500:
  *         description: Server error
  */
-router.get('/:id', 
+router.get('/:id',
   AuthMiddleware.authenticate,
   async (req, res, next) => {
     try {
@@ -311,7 +311,7 @@ router.get('/:id',
  *       500:
  *         description: Server error
  */
-router.put('/:id/status', 
+router.put('/:id/status',
   AuthMiddleware.authenticate,
   [
     body('status').isIn(['pending', 'confirmed', 'cancelled', 'completed'])
@@ -378,7 +378,7 @@ router.put('/:id/status',
  *       500:
  *         description: Server error
  */
-router.put('/:id/notes', 
+router.put('/:id/notes',
   AuthMiddleware.authenticate,
   AuthMiddleware.authorize(['doctor']),
   [
@@ -624,34 +624,34 @@ router.put('/:id/cancel',
 );
 
 // Helper function to check time slot availability
-async function checkTimeSlotAvailability(doctor, appointmentTime) {
+async function checkTimeSlotAvailability (doctor, appointmentTime) {
   const day = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][appointmentTime.getDay()];
-  const time = appointmentTime.getHours() + ':' + (appointmentTime.getMinutes() < 10 ? '0' : '') + appointmentTime.getMinutes();
-  
+  const time = `${appointmentTime.getHours()}:${appointmentTime.getMinutes() < 10 ? '0' : ''}${appointmentTime.getMinutes()}`;
+
   // Check if day is in doctor's availability
   const daySchedule = doctor.availability.find(schedule => schedule.day === day);
   if (!daySchedule) return false;
-  
+
   // Check if time is within any slot
   const isTimeInSlot = daySchedule.slots.some(slot => {
     const [startHour, startMinute] = slot.start.split(':').map(Number);
     const [endHour, endMinute] = slot.end.split(':').map(Number);
-    
+
     const slotStart = new Date(appointmentTime);
     slotStart.setHours(startHour, startMinute, 0, 0);
-    
+
     const slotEnd = new Date(appointmentTime);
     slotEnd.setHours(endHour, endMinute, 0, 0);
-    
+
     return appointmentTime >= slotStart && appointmentTime < slotEnd && !slot.isBooked;
   });
-  
+
   if (!isTimeInSlot) return false;
-  
+
   // Check for existing appointments at this time
   const appointmentEnd = new Date(appointmentTime);
   appointmentEnd.setMinutes(appointmentEnd.getMinutes() + 30);
-  
+
   const existingAppointment = await Appointment.findOne({
     doctorId: doctor._id,
     status: { $nin: ['cancelled'] },
@@ -673,7 +673,7 @@ async function checkTimeSlotAvailability(doctor, appointmentTime) {
       }
     ]
   });
-  
+
   return !existingAppointment;
 }
 

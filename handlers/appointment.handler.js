@@ -4,7 +4,7 @@ const User = require('../models/user.model');
 const { validationResult } = require('express-validator');
 
 // Helper to get slot duration for a doctor
-async function getSlotDurationMinutes(doctorId) {
+async function getSlotDurationMinutes (doctorId) {
   const Doctor = require('../models/doctor.model');
   const doctor = await Doctor.findById(doctorId);
   return doctor && doctor.slotDurationMinutes ? doctor.slotDurationMinutes : 15;
@@ -12,7 +12,7 @@ async function getSlotDurationMinutes(doctorId) {
 
 const AppointmentHandler = {
   // Create a new appointment
-  async createAppointment(req, res) {
+  async createAppointment (req, res) {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -87,7 +87,7 @@ const AppointmentHandler = {
   },
 
   // Get all appointments for the user or for a doctor if doctorId is provided
-  async getAppointments(req, res) {
+  async getAppointments (req, res) {
     try {
       const { doctorId, status, type, page = 1, limit = 10 } = req.query;
       const query = {};
@@ -108,7 +108,7 @@ const AppointmentHandler = {
   },
 
   // Get appointment by ID
-  async getAppointment(req, res) {
+  async getAppointment (req, res) {
     try {
       const { id } = req.params;
       const appointment = await Appointment.findById(id);
@@ -117,8 +117,8 @@ const AppointmentHandler = {
       }
       // Only allow doctor or patient to view
       if (
-        appointment.patientId.toString() !== req.user.id &&
-        appointment.doctorId.toString() !== req.user.id
+        appointment.patientId.toString() !== req.user.id
+        && appointment.doctorId.toString() !== req.user.id
       ) {
         return res.status(403).json({ message: 'Forbidden' });
       }
@@ -130,7 +130,7 @@ const AppointmentHandler = {
   },
 
   // Update appointment status
-  async updateAppointmentStatus(req, res) {
+  async updateAppointmentStatus (req, res) {
     try {
       const { id } = req.params;
       const { status } = req.body;
@@ -140,8 +140,8 @@ const AppointmentHandler = {
       }
       // Only doctor or patient can update
       if (
-        appointment.patientId.toString() !== req.user.id &&
-        appointment.doctorId.toString() !== req.user.id
+        appointment.patientId.toString() !== req.user.id
+        && appointment.doctorId.toString() !== req.user.id
       ) {
         return res.status(403).json({ message: 'Forbidden' });
       }
@@ -155,7 +155,7 @@ const AppointmentHandler = {
   },
 
   // Update appointment notes (doctor only)
-  async updateAppointmentNotes(req, res) {
+  async updateAppointmentNotes (req, res) {
     try {
       const { id } = req.params;
       const { notes } = req.body;
@@ -177,7 +177,7 @@ const AppointmentHandler = {
   },
 
   // Get available slots for a doctor and date
-  async getAvailableSlots(req, res) {
+  async getAvailableSlots (req, res) {
     try {
       const { doctorId, date } = req.query;
       const doctor = await Doctor.findById(doctorId);
@@ -201,7 +201,7 @@ const AppointmentHandler = {
         while (current + slotDuration <= slotEnd) {
           const s = String(current).padStart(4, '0');
           const e = String(current + slotDuration).padStart(4, '0');
-          const slotStr = `${s.slice(0,2)}:${s.slice(2)}-${e.slice(0,2)}:${e.slice(2)}`;
+          const slotStr = `${s.slice(0, 2)}:${s.slice(2)}-${e.slice(0, 2)}:${e.slice(2)}`;
           if (!booked.includes(slotStr)) {
             availableSlots.push(slotStr);
           }
@@ -216,7 +216,7 @@ const AppointmentHandler = {
   },
 
   // Reschedule an appointment
-  async rescheduleAppointment(req, res) {
+  async rescheduleAppointment (req, res) {
     try {
       const { id } = req.params;
       const { date, timeSlot } = req.body;
@@ -228,8 +228,8 @@ const AppointmentHandler = {
         return res.status(409).json({ message: 'Cannot reschedule a cancelled appointment' });
       }
       if (
-        appointment.patientId.toString() !== req.user.id &&
-        appointment.doctorId.toString() !== req.user.id
+        appointment.patientId.toString() !== req.user.id
+        && appointment.doctorId.toString() !== req.user.id
       ) {
         return res.status(403).json({ message: 'Forbidden' });
       }
@@ -280,7 +280,7 @@ const AppointmentHandler = {
   },
 
   // Get available slots for a doctor for a date range
-  async getAvailableSlotsForRange(req, res) {
+  async getAvailableSlotsForRange (req, res) {
     try {
       const { doctorId, startDate, endDate } = req.query;
       const doctor = await Doctor.findById(doctorId);
@@ -293,7 +293,7 @@ const AppointmentHandler = {
         return res.status(400).json({ message: 'Invalid date range' });
       }
       const results = [];
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      for (let d = new Date(start); d <= end; d = new Date(d.getTime() + 24 * 60 * 60 * 1000)) {
         const weekday = d.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
         const daySchedule = doctor.availability.find(s => s.day.toLowerCase() === weekday);
         const dateStr = d.toISOString().slice(0, 10);
@@ -323,7 +323,7 @@ const AppointmentHandler = {
             }
             if (!overlap) {
               // Format as HH:MM-HH:MM
-              availableSlots.push(`${s.slice(0,2)}:${s.slice(2)}-${e.slice(0,2)}:${e.slice(2)}`);
+              availableSlots.push(`${s.slice(0, 2)}:${s.slice(2)}-${e.slice(0, 2)}:${e.slice(2)}`);
             }
             current += slotDuration;
           }
@@ -338,7 +338,7 @@ const AppointmentHandler = {
   },
 
   // Cancel an appointment
-  async cancelAppointment(req, res) {
+  async cancelAppointment (req, res) {
     try {
       const { id } = req.params;
       const { reason } = req.body;
@@ -348,8 +348,8 @@ const AppointmentHandler = {
       }
       // Only doctor or patient can cancel
       if (
-        appointment.patientId.toString() !== req.user.id &&
-        appointment.doctorId.toString() !== req.user.id
+        appointment.patientId.toString() !== req.user.id
+        && appointment.doctorId.toString() !== req.user.id
       ) {
         return res.status(403).json({ message: 'Forbidden' });
       }
@@ -382,4 +382,4 @@ const AppointmentHandler = {
   }
 };
 
-module.exports = AppointmentHandler; 
+module.exports = AppointmentHandler;

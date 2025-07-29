@@ -5,7 +5,7 @@ module.exports = {
   port: process.env.PORT || 8080,
   mongoUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/med-connecter',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
-  
+
   // JWT settings
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key',
@@ -100,4 +100,4 @@ module.exports = {
     sms: process.env.ENABLE_SMS_NOTIFICATIONS === 'true',
     push: process.env.ENABLE_PUSH_NOTIFICATIONS === 'true'
   }
-}; 
+};

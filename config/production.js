@@ -47,4 +47,4 @@ module.exports = {
       apis: ['./docs/swagger/*.js']
     }
   }
-}; 
+};

@@ -659,7 +659,7 @@ router.get('/profile', AuthMiddleware.authenticate, AuthMiddleware.authorize(['d
  *                   example: Failed to update doctor profile
  */
 router.post('/profile', AuthMiddleware.authenticate,
-   DoctorHandler.createOrUpdateProfile);
+  DoctorHandler.createOrUpdateProfile);
 
 /**
  * @swagger
@@ -798,32 +798,32 @@ router.put('/appointments/:id', AuthMiddleware.authenticate, DoctorHandler.updat
  *       500:
  *         description: Server error
  */
-router.put('/profile-picture', 
-  AuthMiddleware.authenticate, 
-  AuthMiddleware.authorize(['doctor']), 
-  upload.single('profilePicture'), 
+router.put('/profile-picture',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['doctor']),
+  upload.single('profilePicture'),
   async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
       }
-      
+
       // Upload to S3
       const imageUrl = await AWSService.uploadToS3(
         req.file.buffer,
         req.file.originalname,
         req.file.mimetype
       );
-      
+
       // Update user profile
       const user = await User.findById(req.user.id);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       user.avatarUrl = imageUrl;
       await user.save();
-      
+
       res.json({
         message: 'Profile picture uploaded successfully',
         avatarUrl: imageUrl
@@ -1113,7 +1113,6 @@ router.put('/availability', AuthMiddleware.authenticate, AuthMiddleware.authoriz
 router.post('/verify-registration', AuthMiddleware.authenticate,
   AuthMiddleware.authorize(['doctor']), DoctorHandler.verifyRegistrationNumber);
 
-
 /**
  * @swagger
  * /api/v1/doctors/unavailability:
@@ -1223,7 +1222,7 @@ router.delete('/unavailability', AuthMiddleware.authenticate, AuthMiddleware.aut
  *         description: Server error
  */
 router.get('/unavailability', AuthMiddleware.authenticate,
-  AuthMiddleware.authorize(['doctor']),DoctorHandler.getUnavailability);
+  AuthMiddleware.authorize(['doctor']), DoctorHandler.getUnavailability);
 
 /**
  * @swagger
@@ -1254,7 +1253,7 @@ router.get('/unavailability', AuthMiddleware.authenticate,
  *       500:
  *         description: Server error
  */
-router.get('/big-register',AuthMiddleware.authenticate,
+router.get('/big-register', AuthMiddleware.authenticate,
   AuthMiddleware.authorize(['doctor']), DoctorHandler.getDoctorFromBigRegister);
 
 /**
@@ -1363,6 +1362,6 @@ router.post('/liability-insurance',
  *       500:
  *         description: Failed to get doctor status
  */
-router.get('/status/:userId',AuthMiddleware.authenticate, DoctorHandler.getDoctorStatus);
+router.get('/status/:userId', AuthMiddleware.authenticate, DoctorHandler.getDoctorStatus);
 
 module.exports = router;

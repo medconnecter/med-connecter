@@ -118,7 +118,7 @@ const upload = multer({
  *       500:
  *         description: Server error
  */
-router.get('/:appointmentId', 
+router.get('/:appointmentId',
   AuthMiddleware.authenticate,
   ChatHandler.getChatMessages
 );
@@ -173,7 +173,7 @@ router.get('/:appointmentId',
  *       500:
  *         description: Server error
  */
-router.post('/:appointmentId/message', 
+router.post('/:appointmentId/message',
   AuthMiddleware.authenticate,
   [
     body('content').isString().withMessage('Message content must be a string'),
@@ -230,7 +230,7 @@ router.post('/:appointmentId/message',
  *       500:
  *         description: Server error
  */
-router.post('/:appointmentId/file', 
+router.post('/:appointmentId/file',
   AuthMiddleware.authenticate,
   upload.single('file'),
   ChatHandler.uploadFile
@@ -262,7 +262,7 @@ router.post('/:appointmentId/file',
  *       500:
  *         description: Server error
  */
-router.get('/unread-count', 
+router.get('/unread-count',
   AuthMiddleware.authenticate,
   ChatHandler.getUnreadCount
 );

@@ -7,10 +7,10 @@ const logger = require('../utils/logger');
 
 class AuthMiddleware {
   // Verify JWT token and session
-  static async authenticate(req, res, next) {
+  static async authenticate (req, res, next) {
     try {
       const authHeader = req.headers.authorization;
-      
+
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({
           success: false,
@@ -19,10 +19,10 @@ class AuthMiddleware {
       }
 
       const token = authHeader.split(' ')[1];
-      
+
       try {
         const decoded = verifyToken(token);
-        
+
         // Find user and check if they exist
         const user = await User.findById(decoded.userId);
         if (!user) {
@@ -76,7 +76,7 @@ class AuthMiddleware {
   }
 
   // Authorize based on roles
-  static authorize(allowedRoles = []) {
+  static authorize (allowedRoles = []) {
     return (req, res, next) => {
       try {
         if (!req.user) {
@@ -133,7 +133,7 @@ class AuthMiddleware {
     };
   }
 
-  static requireVerifiedEmail(req, res, next) {
+  static requireVerifiedEmail (req, res, next) {
     if (!req.user.isEmailVerified) {
       return res.status(403).json({
         success: false,
@@ -143,7 +143,7 @@ class AuthMiddleware {
     next();
   }
 
-  static requireVerifiedPhone(req, res, next) {
+  static requireVerifiedPhone (req, res, next) {
     if (!req.user.isPhoneVerified) {
       return res.status(403).json({
         success: false,
@@ -153,7 +153,7 @@ class AuthMiddleware {
     next();
   }
 
-  static requireVerifiedProfile(req, res, next) {
+  static requireVerifiedProfile (req, res, next) {
     if (!req.user.isEmailVerified || !req.user.isPhoneVerified) {
       return res.status(403).json({
         success: false,
@@ -164,7 +164,7 @@ class AuthMiddleware {
   }
 
   // Check if user is a doctor
-  static requireDoctor(req, res, next) {
+  static requireDoctor (req, res, next) {
     if (req.user.role !== 'doctor' && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -175,7 +175,7 @@ class AuthMiddleware {
   }
 
   // Check if user is an admin
-  static requireAdmin(req, res, next) {
+  static requireAdmin (req, res, next) {
     if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -186,7 +186,7 @@ class AuthMiddleware {
   }
 
   // Check if doctor profile is verified
-  static async requireVerifiedDoctor(req, res, next) {
+  static async requireVerifiedDoctor (req, res, next) {
     try {
       // Admin bypass
       if (req.user.role === 'admin') {
@@ -212,7 +212,7 @@ class AuthMiddleware {
   }
 
   // Middleware to block deactivated users
-  static blockDeactivated(req, res, next) {
+  static blockDeactivated (req, res, next) {
     if (req.user && req.user.status === 'inactive') {
       return res.status(403).json({ message: 'Your account is deactivated. Please contact support.' });
     }

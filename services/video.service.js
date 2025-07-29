@@ -17,7 +17,7 @@ const User = require('../models/user.model');
  * @param {Date} scheduledAt - Scheduled time for the session
  * @returns {Promise<Object>} Video session details
  */
-async function createVideoSession(doctorId, patientId, scheduledAt) {
+async function createVideoSession (doctorId, patientId, scheduledAt) {
   try {
     // Verify users exist
     const [doctor, patient] = await Promise.all([
@@ -31,7 +31,7 @@ async function createVideoSession(doctorId, patientId, scheduledAt) {
 
     // Create a mock room for development
     const roomId = `dev-room-${uuidv4()}`;
-    
+
     // Create video session record
     const videoSession = new VideoSession({
       roomId,
@@ -62,7 +62,7 @@ async function createVideoSession(doctorId, patientId, scheduledAt) {
  * @param {string} userId - User ID of the participant
  * @returns {Promise<Object>} Session access details
  */
-async function joinVideoSession(sessionId, userId) {
+async function joinVideoSession (sessionId, userId) {
   try {
     const session = await VideoSession.findById(sessionId);
     if (!session) {
@@ -91,7 +91,7 @@ async function joinVideoSession(sessionId, userId) {
  * @param {string} sessionId - Video session ID
  * @returns {Promise<Object>} Updated session details
  */
-async function endVideoSession(sessionId) {
+async function endVideoSession (sessionId) {
   try {
     const session = await VideoSession.findById(sessionId);
     if (!session) {

@@ -1772,4 +1772,4 @@
  *               $ref: '#/components/schemas/Error'
  */
 
-module.exports = {}; 
+module.exports = {};

@@ -5,7 +5,7 @@ const Doctor = require('../models/doctor.model');
 const { sendEmail } = require('../services/aws.service');
 
 const VideoHandler = {
-  async createSession(req, res) {
+  async createSession (req, res) {
     try {
       const { appointmentId } = req.body;
       const userId = req.user.id;
@@ -20,8 +20,8 @@ const VideoHandler = {
       }
 
       // Verify user is either the doctor or patient
-      if (appointment.doctorId.userId.toString() !== userId && 
-          appointment.patientId._id.toString() !== userId) {
+      if (appointment.doctorId.userId.toString() !== userId
+          && appointment.patientId._id.toString() !== userId) {
         return res.status(403).json({ message: 'Not authorized to access this appointment' });
       }
 
@@ -69,7 +69,7 @@ const VideoHandler = {
     }
   },
 
-  async endSession(req, res) {
+  async endSession (req, res) {
     try {
       const { sessionId } = req.params;
       const userId = req.user.id;
@@ -82,8 +82,8 @@ const VideoHandler = {
       }
 
       // Verify user is either the doctor or patient
-      if (session.doctorId.toString() !== userId && 
-          session.patientId.toString() !== userId) {
+      if (session.doctorId.toString() !== userId
+          && session.patientId.toString() !== userId) {
         return res.status(403).json({ message: 'Not authorized to end this session' });
       }
 
@@ -105,7 +105,7 @@ const VideoHandler = {
     }
   },
 
-  async getSessionDetails(req, res) {
+  async getSessionDetails (req, res) {
     try {
       const { sessionId } = req.params;
       const userId = req.user.id;
@@ -120,8 +120,8 @@ const VideoHandler = {
       }
 
       // Verify user is either the doctor or patient
-      if (session.doctorId.userId.toString() !== userId && 
-          session.patientId._id.toString() !== userId) {
+      if (session.doctorId.userId.toString() !== userId
+          && session.patientId._id.toString() !== userId) {
         return res.status(403).json({ message: 'Not authorized to view this session' });
       }
 
@@ -132,7 +132,7 @@ const VideoHandler = {
     }
   },
 
-  async joinSession(req, res) {
+  async joinSession (req, res) {
     try {
       const { sessionId } = req.params;
       const userId = req.user.id;
@@ -145,8 +145,8 @@ const VideoHandler = {
       }
 
       // Verify user is either the doctor or patient
-      if (session.doctorId.toString() !== userId && 
-          session.patientId.toString() !== userId) {
+      if (session.doctorId.toString() !== userId
+          && session.patientId.toString() !== userId) {
         return res.status(403).json({ message: 'Not authorized to join this session' });
       }
 
@@ -167,10 +167,10 @@ const VideoHandler = {
 };
 
 // Helper function to generate video token
-async function generateVideoToken(sessionId, userId) {
+async function generateVideoToken (sessionId, userId) {
   // TODO: Implement actual token generation logic with your video provider
   // This is a placeholder that returns a mock token
   return `mock-token-${sessionId}-${userId}-${Date.now()}`;
 }
 
-module.exports = VideoHandler; 
+module.exports = VideoHandler;

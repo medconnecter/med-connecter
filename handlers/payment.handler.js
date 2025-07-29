@@ -1,5 +1,5 @@
 const PaymentHandler = {
-  async initiatePayment(req, res) {
+  async initiatePayment (req, res) {
     try {
       // TODO: Implement payment initiation logic
       res.status(201).json({ message: 'Payment initiated (stub)' });
@@ -8,7 +8,7 @@ const PaymentHandler = {
       res.status(500).json({ message: 'Server error' });
     }
   },
-  async getPaymentById(req, res) {
+  async getPaymentById (req, res) {
     try {
       // TODO: Implement get payment by ID logic
       res.json({ message: 'Payment details (stub)' });
@@ -19,4 +19,4 @@ const PaymentHandler = {
   }
 };
 
-module.exports = PaymentHandler; 
+module.exports = PaymentHandler;

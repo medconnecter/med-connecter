@@ -38,7 +38,7 @@ reviewSchema.index({ userId: 1, createdAt: -1 });
 reviewSchema.index({ appointmentId: 1 }, { unique: true });
 
 // Ensure one review per appointment
-reviewSchema.pre('save', async function(next) {
+reviewSchema.pre('save', async function (next) {
   if (this.isNew) {
     const existingReview = await this.constructor.findOne({ appointmentId: this.appointmentId });
     if (existingReview) {
@@ -49,7 +49,7 @@ reviewSchema.pre('save', async function(next) {
 });
 
 // Update doctor's average rating after review changes
-reviewSchema.statics.updateDoctorRating = async function(doctorId) {
+reviewSchema.statics.updateDoctorRating = async function (doctorId) {
   const result = await this.aggregate([
     { $match: { doctorId: mongoose.Types.ObjectId(doctorId) } },
     {
@@ -70,11 +70,11 @@ reviewSchema.statics.updateDoctorRating = async function(doctorId) {
 };
 
 // Update doctor rating after save/remove
-reviewSchema.post('save', function() {
+reviewSchema.post('save', function () {
   this.constructor.updateDoctorRating(this.doctorId);
 });
 
-reviewSchema.post('remove', function() {
+reviewSchema.post('remove', function () {
   this.constructor.updateDoctorRating(this.doctorId);
 });
 

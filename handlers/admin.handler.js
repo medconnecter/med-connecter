@@ -5,7 +5,7 @@ const BigRegisterService = require('../services/bigRegister.service');
 
 class AdminHandler {
   // Get all pending doctor verifications
-  static async getPendingVerifications(req, res) {
+  static async getPendingVerifications (req, res) {
     try {
       const doctors = await Doctor.find({ status: 'pending' })
         .populate('userId', 'username email phone firstName lastName');
@@ -24,7 +24,7 @@ class AdminHandler {
   }
 
   // Verify doctor profile
-  static async verifyDoctorProfile(req, res) {
+  static async verifyDoctorProfile (req, res) {
     try {
       const { doctorId, status, adminComments } = req.body;
 
@@ -71,7 +71,7 @@ class AdminHandler {
   }
 
   // Get all doctors
-  static async getAllDoctors(req, res) {
+  static async getAllDoctors (req, res) {
     try {
       const { status, page = 1, limit = 10 } = req.query;
       const query = status ? { status } : {};
@@ -105,7 +105,7 @@ class AdminHandler {
   }
 
   // Get doctor details
-  static async getDoctorDetails(req, res) {
+  static async getDoctorDetails (req, res) {
     try {
       const { doctorId } = req.params;
 
@@ -126,7 +126,7 @@ class AdminHandler {
 
       // Get statistics
       const totalReviews = await Review.countDocuments({ doctorId });
-      const verifiedReviews = await Review.countDocuments({ 
+      const verifiedReviews = await Review.countDocuments({
         doctorId,
         isVerified: true
       });
@@ -157,7 +157,7 @@ class AdminHandler {
   }
 
   // Verify review
-  static async verifyReview(req, res) {
+  static async verifyReview (req, res) {
     try {
       const { reviewId, status, rejectionReason } = req.body;
 
@@ -208,7 +208,7 @@ class AdminHandler {
   }
 
   // Get all pending reviews
-  static async getPendingReviews(req, res) {
+  static async getPendingReviews (req, res) {
     try {
       const reviews = await Review.find({ status: 'pending' })
         .populate('doctorId', 'userId')
@@ -229,7 +229,7 @@ class AdminHandler {
   }
 
   // Get dashboard statistics
-  static async getDashboardStats(req, res) {
+  static async getDashboardStats (req, res) {
     try {
       const totalDoctors = await Doctor.countDocuments();
       const pendingDoctors = await Doctor.countDocuments({ status: 'pending' });
@@ -257,4 +257,4 @@ class AdminHandler {
   }
 }
 
-module.exports = AdminHandler; 
+module.exports = AdminHandler;

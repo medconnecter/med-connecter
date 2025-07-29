@@ -124,4 +124,4 @@ const UserHandler = {
   }
 };
 
-module.exports = UserHandler; 
+module.exports = UserHandler;

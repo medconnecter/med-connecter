@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const config = require('../config/config');
 
-async function resetUsersCollection() {
+async function resetUsersCollection () {
   try {
     // Connect to MongoDB
     await mongoose.connect(config.mongoUri, {
@@ -29,4 +29,4 @@ async function resetUsersCollection() {
 }
 
 // Run the script
-resetUsersCollection(); 
+resetUsersCollection();

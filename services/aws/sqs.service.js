@@ -7,12 +7,12 @@ const {
 } = require('@aws-sdk/client-sqs');
 
 class SQSService {
-  constructor() {
+  constructor () {
     this.queueUrl = process.env.AWS_SQS_QUEUE_URL;
   }
 
   // Create a new SQS queue
-  async createQueue(queueName) {
+  async createQueue (queueName) {
     const command = new CreateQueueCommand({
       QueueName: queueName,
       Attributes: {
@@ -26,7 +26,7 @@ class SQSService {
   }
 
   // Send message to queue
-  async sendMessage(messageBody, delaySeconds = 0) {
+  async sendMessage (messageBody, delaySeconds = 0) {
     const command = new SendMessageCommand({
       QueueUrl: this.queueUrl,
       MessageBody: typeof messageBody === 'string' ? messageBody : JSON.stringify(messageBody),
@@ -37,7 +37,7 @@ class SQSService {
   }
 
   // Receive messages from queue
-  async receiveMessages(maxMessages = 10) {
+  async receiveMessages (maxMessages = 10) {
     const command = new ReceiveMessageCommand({
       QueueUrl: this.queueUrl,
       MaxNumberOfMessages: maxMessages,
@@ -48,7 +48,7 @@ class SQSService {
   }
 
   // Delete message from queue
-  async deleteMessage(receiptHandle) {
+  async deleteMessage (receiptHandle) {
     const command = new DeleteMessageCommand({
       QueueUrl: this.queueUrl,
       ReceiptHandle: receiptHandle
@@ -58,9 +58,9 @@ class SQSService {
   }
 
   // Process messages with a callback
-  async processMessages(callback, maxMessages = 10) {
+  async processMessages (callback, maxMessages = 10) {
     const response = await this.receiveMessages(maxMessages);
-    
+
     if (!response.Messages) {
       return;
     }
@@ -76,4 +76,4 @@ class SQSService {
   }
 }
 
-module.exports = new SQSService(); 
+module.exports = new SQSService();

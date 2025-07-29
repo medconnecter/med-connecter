@@ -1,12 +1,12 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const mongoose = require('mongoose');
 const User = require('../models/user.model');
 const Doctor = require('../models/doctor.model');
 const Appointment = require('../models/appointment.model');
 const Payment = require('../models/payment.model');
+const Review = require('../models/review.model');
 const AuthMiddleware = require('../middleware/auth.middleware');
-const AdminHandler = require('../handlers/admin.handler');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -341,18 +341,18 @@ router.get('/doctors',
  *       200:
  *         description: Doctor details retrieved successfully
  */
-router.get('/doctors/:id', 
-  AuthMiddleware.authenticate, 
-  AuthMiddleware.authorize(['admin']), 
+router.get('/doctors/:id',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['admin']),
   async (req, res) => {
     try {
       const doctor = await Doctor.findById(req.params.id)
         .populate('userId', 'firstName lastName email');
-        
+
       if (!doctor) {
         return res.status(404).json({ message: 'Doctor not found' });
       }
-      
+
       res.json(doctor);
     } catch (error) {
       console.error('Admin get doctor error:', error);
@@ -505,14 +505,14 @@ router.get('/dashboard', async (req, res) => {
   try {
     // Get date range for filtering
     const { startDate, endDate } = req.query;
-    let dateFilter = {};
-    
+    const dateFilter = {};
+
     if (startDate || endDate) {
       dateFilter.createdAt = {};
       if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
       if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
     }
-    
+
     // Stats collection - using aggregation and Promise.all for parallel execution
     const [
       totalDoctors,
@@ -546,16 +546,16 @@ router.get('/dashboard', async (req, res) => {
         }
       ])
     ]);
-    
+
     // Format appointment stats
     const appointmentByStatus = {};
     appointmentStats.forEach(item => {
       appointmentByStatus[item._id] = item.count;
     });
-    
+
     const revenue = revenueStats.length > 0 ? revenueStats[0].totalAmount : 0;
     const successfulPayments = revenueStats.length > 0 ? revenueStats[0].count : 0;
-    
+
     res.json({
       doctors: {
         total: totalDoctors,
@@ -642,32 +642,32 @@ router.get('/dashboard', async (req, res) => {
  */
 router.get('/appointments', async (req, res) => {
   try {
-    const { 
-      status, 
-      from, 
+    const {
+      status,
+      from,
       to,
-      page = 1, 
-      limit = 10 
+      page = 1,
+      limit = 10
     } = req.query;
-    
+
     // Build query
-    let query = {};
-    
+    const query = {};
+
     // Filter by status
     if (status && ['pending', 'confirmed', 'cancelled', 'completed', 'no-show'].includes(status)) {
       query.status = status;
     }
-    
+
     // Filter by date range
     if (from || to) {
       query.scheduledAt = {};
       if (from) query.scheduledAt.$gte = new Date(from);
       if (to) query.scheduledAt.$lte = new Date(to);
     }
-    
+
     // Calculate pagination
     const skip = (Number(page) - 1) * Number(limit);
-    
+
     // Get appointments with patient/doctor info
     const appointments = await Appointment.aggregate([
       { $match: query },
@@ -732,10 +732,10 @@ router.get('/appointments', async (req, res) => {
       { $skip: skip },
       { $limit: Number(limit) }
     ]);
-    
+
     // Get total count
     const totalAppointments = await Appointment.countDocuments(query);
-    
+
     res.json({
       appointments,
       page: Number(page),
@@ -802,10 +802,10 @@ router.get('/appointments', async (req, res) => {
 router.get('/patients', async (req, res) => {
   try {
     const { page = 1, limit = 10, search } = req.query;
-    
+
     // Build query
-    let query = { role: 'patient' };
-    
+    const query = { role: 'patient' };
+
     // Add search if provided
     if (search) {
       const searchRegex = new RegExp(search, 'i');
@@ -815,20 +815,20 @@ router.get('/patients', async (req, res) => {
         { email: searchRegex }
       ];
     }
-    
+
     // Calculate pagination
     const skip = (Number(page) - 1) * Number(limit);
-    
+
     // Get patients
     const patients = await User.find(query)
       .select('firstName lastName email phone avatarUrl createdAt lastLogin')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
-    
+
     // Get total count
     const totalPatients = await User.countDocuments(query);
-    
+
     res.json({
       patients,
       page: Number(page),
@@ -871,30 +871,30 @@ router.get('/patients', async (req, res) => {
  *       200:
  *         description: List of users retrieved successfully
  */
-router.get('/users', 
-  AuthMiddleware.authenticate, 
-  AuthMiddleware.authorize(['admin']), 
+router.get('/users',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['admin']),
   async (req, res) => {
     try {
       const { role, status, page = 1, limit = 10 } = req.query;
       const query = {};
-      
+
       if (role) {
         query.role = role;
       }
-      
+
       if (status) {
         query.status = status;
       }
-      
+
       const users = await User.find(query)
         .select('-password')
         .skip((page - 1) * limit)
         .limit(Number(limit))
         .sort({ createdAt: -1 });
-        
+
       const total = await User.countDocuments(query);
-      
+
       res.json({
         users,
         page: Number(page),
@@ -928,17 +928,17 @@ router.get('/users',
  *       200:
  *         description: User details retrieved successfully
  */
-router.get('/users/:id', 
-  AuthMiddleware.authenticate, 
-  AuthMiddleware.authorize(['admin']), 
+router.get('/users/:id',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['admin']),
   async (req, res) => {
     try {
       const user = await User.findById(req.params.id).select('-password');
-      
+
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       res.json(user);
     } catch (error) {
       console.error('Admin get user error:', error);
@@ -978,8 +978,8 @@ router.get('/users/:id',
  *       200:
  *         description: User status updated successfully
  */
-router.put('/users/:id/status', 
-  AuthMiddleware.authenticate, 
+router.put('/users/:id/status',
+  AuthMiddleware.authenticate,
   AuthMiddleware.authorize(['admin']),
   [
     body('status').isIn(['active', 'inactive', 'suspended']).withMessage('Invalid status')
@@ -990,17 +990,17 @@ router.put('/users/:id/status',
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
-      
+
       const { status } = req.body;
       const user = await User.findById(req.params.id);
-      
+
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       user.status = status;
       await user.save();
-      
+
       res.json({ message: 'User status updated successfully', user });
     } catch (error) {
       console.error('Admin update user status error:', error);
@@ -1038,18 +1038,18 @@ router.put('/users/:id/status',
  *       200:
  *         description: List of reviews retrieved successfully
  */
-router.get('/reviews', 
-  AuthMiddleware.authenticate, 
-  AuthMiddleware.authorize(['admin']), 
+router.get('/reviews',
+  AuthMiddleware.authenticate,
+  AuthMiddleware.authorize(['admin']),
   async (req, res) => {
     try {
       const { status, page = 1, limit = 10 } = req.query;
       const query = {};
-      
+
       if (status) {
         query.status = status;
       }
-      
+
       const reviews = await Review.find(query)
         .populate('userId', 'firstName lastName')
         .populate('doctorId', 'userId')
@@ -1057,9 +1057,9 @@ router.get('/reviews',
         .skip((page - 1) * limit)
         .limit(Number(limit))
         .sort({ createdAt: -1 });
-        
+
       const total = await Review.countDocuments(query);
-      
+
       res.json({
         reviews,
         page: Number(page),
@@ -1105,8 +1105,8 @@ router.get('/reviews',
  *       200:
  *         description: Review status updated successfully
  */
-router.put('/reviews/:id', 
-  AuthMiddleware.authenticate, 
+router.put('/reviews/:id',
+  AuthMiddleware.authenticate,
   AuthMiddleware.authorize(['admin']),
   [
     body('status').isIn(['pending', 'approved', 'rejected']).withMessage('Invalid status')
@@ -1117,17 +1117,17 @@ router.put('/reviews/:id',
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
-      
+
       const { status } = req.body;
       const review = await Review.findById(req.params.id);
-      
+
       if (!review) {
         return res.status(404).json({ message: 'Review not found' });
       }
-      
+
       review.status = status;
       await review.save();
-      
+
       res.json({ message: 'Review status updated successfully', review });
     } catch (error) {
       console.error('Admin update review status error:', error);

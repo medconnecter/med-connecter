@@ -18,9 +18,9 @@ router.post('/help-me-choose', [
   }
 
   try {
-    const { 
-      symptoms = [], 
-      languages = ['en', 'nl'], 
+    const {
+      symptoms = [],
+      languages = ['en', 'nl'],
       urgency = 'medium',
       preferredGender = 'no_preference',
       insuranceProvider = null
@@ -29,20 +29,20 @@ router.post('/help-me-choose', [
     // Map symptoms to specialties based on a basic rule set
     // In a real system, this would be much more sophisticated
     const specialtyMap = {
-      'headache': ['General Practitioner', 'Neurologist'],
-      'migraine': ['Neurologist'],
+      headache: ['General Practitioner', 'Neurologist'],
+      migraine: ['Neurologist'],
       'back pain': ['Orthopedist', 'Rheumatologist'],
       'chest pain': ['Cardiologist', 'Pulmonologist'],
       'abdominal pain': ['Gastroenterologist', 'General Practitioner'],
-      'cough': ['Pulmonologist', 'General Practitioner'],
-      'fever': ['General Practitioner', 'Infectious Disease'],
-      'rash': ['Dermatologist'],
+      cough: ['Pulmonologist', 'General Practitioner'],
+      fever: ['General Practitioner', 'Infectious Disease'],
+      rash: ['Dermatologist'],
       'joint pain': ['Rheumatologist', 'Orthopedist'],
-      'fatigue': ['General Practitioner', 'Endocrinologist'],
-      'depression': ['Psychiatrist', 'Psychologist'],
-      'anxiety': ['Psychiatrist', 'Psychologist'],
+      fatigue: ['General Practitioner', 'Endocrinologist'],
+      depression: ['Psychiatrist', 'Psychologist'],
+      anxiety: ['Psychiatrist', 'Psychologist'],
       'shortness of breath': ['Pulmonologist', 'Cardiologist'],
-      'dizziness': ['Neurologist', 'ENT Specialist'],
+      dizziness: ['Neurologist', 'ENT Specialist'],
       'vision problems': ['Ophthalmologist'],
       'hearing problems': ['ENT Specialist'],
       'skin issues': ['Dermatologist'],
@@ -50,90 +50,90 @@ router.post('/help-me-choose', [
       'urinary problems': ['Urologist', 'Nephrologist'],
       'sleep problems': ['Neurologist', 'Psychiatrist'],
       'weight changes': ['Endocrinologist', 'General Practitioner'],
-      'allergies': ['Allergist', 'Immunologist']
+      allergies: ['Allergist', 'Immunologist']
     };
-    
+
     // Determine relevant specialties based on symptoms
     const relevantSpecialties = new Set();
-    
+
     symptoms.forEach(symptom => {
       const matchedSpecialties = specialtyMap[symptom.toLowerCase()] || ['General Practitioner'];
       matchedSpecialties.forEach(s => relevantSpecialties.add(s));
     });
-    
+
     // Convert to array and add weight to each specialty based on symptom matches
     const specialtiesArray = Array.from(relevantSpecialties);
-    
+
     // Build the base query for doctors
-    let query = {
+    const query = {
       specialties: { $in: specialtiesArray },
       verified: true,
       verificationStatus: 'verified'
     };
-    
+
     // Add insurance filter if provided
     if (insuranceProvider) {
       query.acceptsInsurance = insuranceProvider;
     }
-    
+
     // Get matching doctors
     let doctors = await Doctor.find(query).limit(50);
-    
+
     // Join with user data to get language and gender info
     const doctorIds = doctors.map(d => d.userId);
-    const doctorUsers = await User.find({ 
-      _id: { $in: doctorIds } 
+    const doctorUsers = await User.find({
+      _id: { $in: doctorIds }
     });
-    
+
     // Create a map for easy access to user data
     const userMap = {};
     doctorUsers.forEach(u => {
       userMap[u._id.toString()] = u;
     });
-    
+
     // Filter and score doctors based on various criteria
     doctors = doctors
       .map(doctor => {
         const user = userMap[doctor.userId.toString()];
         if (!user) return null;
-        
+
         // Skip if gender preference doesn't match
-        if (preferredGender !== 'no_preference' && 
-            user.gender && 
-            user.gender !== preferredGender) {
+        if (preferredGender !== 'no_preference'
+            && user.gender
+            && user.gender !== preferredGender) {
           return null;
         }
-        
+
         // Skip if language requirements don't match
-        const hasRequiredLanguage = languages.some(lang => 
+        const hasRequiredLanguage = languages.some(lang =>
           user.languages && user.languages.includes(lang)
         );
-        
+
         if (!hasRequiredLanguage) {
           return null;
         }
-        
+
         // Calculate a recommendation score
         let score = 0;
-        
+
         // Score based on specialty match
         specialtiesArray.forEach(specialty => {
           if (doctor.specialties.includes(specialty)) {
             score += 10;
           }
         });
-        
+
         // Score based on experience
         score += Math.min(doctor.experience || 0, 20) * 0.5;
-        
+
         // Score based on ratings
         score += (doctor.ratings?.average || 0) * 2;
-        
+
         // Higher score for doctors with more availability this week
         if (doctor.availability && doctor.availability.length > 0) {
           score += Math.min(doctor.availability.length, 7) * 0.5;
         }
-        
+
         // Combine doctor and user data with score
         return {
           ...doctor.toObject(),
@@ -148,7 +148,7 @@ router.post('/help-me-choose', [
       .filter(Boolean) // Remove null entries
       .sort((a, b) => b.recommendationScore - a.recommendationScore) // Sort by score
       .slice(0, 10); // Return top matches
-    
+
     // Return the recommended doctors along with the identified specialties
     res.json({
       recommendedDoctors: doctors,
@@ -191,7 +191,7 @@ router.get('/common-symptoms', async (req, res) => {
       'Weight Changes',
       'Allergies'
     ];
-    
+
     res.json({
       symptoms: commonSymptoms
     });

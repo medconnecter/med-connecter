@@ -7,71 +7,73 @@ const logger = require('../utils/logger');
 
 class AuthHandler {
   // Request OTP for login
-  static async initiateLogin(req, res) {
+  static async initiateLogin (req, res) {
     try {
       const { identifier } = req.body; // identifier can be email or phone
-      
+
       if (!identifier) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Email or phone number is required' 
+        return res.status(400).json({
+          success: false,
+          error: 'Email or phone number is required'
         });
       }
 
       // Determine if identifier is email or phone
-      const type = isValidEmail(identifier) ? 'email' : 
-                  isValidPhone(identifier) ? 'phone' : null;
+      const type = isValidEmail(identifier)
+        ? 'email'
+        : isValidPhone(identifier) ? 'phone' : null;
 
       if (!type) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Invalid email or phone number format' 
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid email or phone number format'
         });
       }
 
       // Check if user exists
       const user = await User.findOne(
-        type === 'email' ? { email: identifier } : 
-        { 'phone.number': identifier }
+        type === 'email'
+          ? { email: identifier }
+          : { 'phone.number': identifier }
       );
 
       if (!user) {
-        return res.status(404).json({ 
-          success: false, 
-          error: 'User not found' 
+        return res.status(404).json({
+          success: false,
+          error: 'User not found'
         });
       }
 
       // Generate and send OTP
       if (type === 'phone') {
-        //await OTPService.generateAndSendOTP(identifier, 'phone', user.phone.countryCode);
+        // await OTPService.generateAndSendOTP(identifier, 'phone', user.phone.countryCode);
       } else {
         await OTPService.generateAndSendOTP(identifier, 'email');
       }
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: `OTP sent to your ${type}`,
         type
       });
     } catch (error) {
       console.error('Login initiation error:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to initiate login' 
+      res.status(500).json({
+        success: false,
+        error: 'Failed to initiate login'
       });
     }
   }
 
   // Verify OTP and login
-  static async verifyLogin(req, res) {
+  static async verifyLogin (req, res) {
     try {
       const { identifier, otp, type, deviceInfo } = req.body;
 
       if (!identifier || !otp || !type) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Identifier, OTP, and type are required' 
+        return res.status(400).json({
+          success: false,
+          error: 'Identifier, OTP, and type are required'
         });
       }
 
@@ -83,14 +85,15 @@ class AuthHandler {
 
       // Find user
       const user = await User.findOne(
-        type === 'email' ? { email: identifier } : 
-        { 'phone.number': identifier }
+        type === 'email'
+          ? { email: identifier }
+          : { 'phone.number': identifier }
       );
 
       if (!user) {
-        return res.status(404).json({ 
-          success: false, 
-          error: 'User not found' 
+        return res.status(404).json({
+          success: false,
+          error: 'User not found'
         });
       }
 
@@ -135,15 +138,15 @@ class AuthHandler {
       });
     } catch (error) {
       logger.error('Login verification error:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to verify login' 
+      res.status(500).json({
+        success: false,
+        error: 'Failed to verify login'
       });
     }
   }
 
   // Check verification status
-  static async checkVerificationStatus(req, res) {
+  static async checkVerificationStatus (req, res) {
     try {
       const { identifier } = req.body; // email or phone
 
@@ -155,8 +158,9 @@ class AuthHandler {
       }
 
       // Determine if identifier is email or phone
-      const type = isValidEmail(identifier) ? 'email' : 
-                  isValidPhone(identifier) ? 'phone' : null;
+      const type = isValidEmail(identifier)
+        ? 'email'
+        : isValidPhone(identifier) ? 'phone' : null;
 
       if (!type) {
         return res.status(400).json({
@@ -167,8 +171,9 @@ class AuthHandler {
 
       // Find user
       const user = await User.findOne(
-        type === 'email' ? { email: identifier } : 
-        { 'phone.number': identifier }
+        type === 'email'
+          ? { email: identifier }
+          : { 'phone.number': identifier }
       );
 
       if (!user) {
@@ -200,7 +205,7 @@ class AuthHandler {
   }
 
   // Resend verification OTP
-  static async resendVerificationOTP(req, res) {
+  static async resendVerificationOTP (req, res) {
     try {
       const { identifier, type } = req.body;
 
@@ -213,8 +218,9 @@ class AuthHandler {
 
       // Find user
       const user = await User.findOne(
-        type === 'email' ? { email: identifier } : 
-        { 'phone.number': identifier }
+        type === 'email'
+          ? { email: identifier }
+          : { 'phone.number': identifier }
       );
 
       if (!user) {
@@ -241,7 +247,7 @@ class AuthHandler {
 
       // Generate and send OTP
       if (type === 'phone') {
-        //await OTPService.generateAndSendOTP(identifier, 'phone', user.phone.countryCode);
+        // await OTPService.generateAndSendOTP(identifier, 'phone', user.phone.countryCode);
       } else {
         await OTPService.generateAndSendOTP(identifier, 'email');
       }
@@ -260,7 +266,7 @@ class AuthHandler {
   }
 
   // Update existing unverified user
-  static async updateUnverifiedUser(existingUser, userData) {
+  static async updateUnverifiedUser (existingUser, userData) {
     const { firstName, lastName, dob, gender, role, address, email, phone, languages } = userData;
 
     existingUser.firstName = firstName;
@@ -290,7 +296,7 @@ class AuthHandler {
       await OTPService.generateAndSendOTP(email, 'email');
     }
     if (!existingUser.isPhoneVerified) {
-      //await OTPService.generateAndSendOTP(phone.number, phone.countryCode);
+      // await OTPService.generateAndSendOTP(phone.number, phone.countryCode);
     }
 
     return {
@@ -300,10 +306,10 @@ class AuthHandler {
   }
 
   // Register new user
-  static async register(req, res) {
+  static async register (req, res) {
     try {
       logger.info('Registration request received:', { body: req.body });
-      
+
       const {
         email,
         phone,
@@ -361,17 +367,17 @@ class AuthHandler {
       // Validate email and phone
       if (!isValidEmail(email)) {
         logger.warn('Invalid email format:', { email });
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Invalid email format' 
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid email format'
         });
       }
 
       if (!isValidPhone(phone.number)) {
         logger.warn('Invalid phone number format:', { phone });
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Invalid phone number format' 
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid phone number format'
         });
       }
 
@@ -413,7 +419,6 @@ class AuthHandler {
 
       try {
         await user.save();
-
       } catch (error) {
         if (error.code === 11000) {
           if (error.keyPattern && error.keyPattern.email) {
@@ -438,7 +443,7 @@ class AuthHandler {
 
       // Generate and send verification OTP
       await OTPService.generateAndSendOTP(email, 'email');
-      //await OTPService.generateAndSendOTP(phone.number, 'phone', phone.countryCode);
+      // await OTPService.generateAndSendOTP(phone.number, 'phone', phone.countryCode);
 
       logger.info('Registration successful:', { userId: user._id });
       res.status(201).json({
@@ -465,15 +470,15 @@ class AuthHandler {
       });
     } catch (error) {
       logger.error('Registration error:', error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         error: 'Failed to register user. Please try again later.'
       });
     }
   }
 
   // Verify email
-  static async verifyEmail(req, res) {
+  static async verifyEmail (req, res) {
     try {
       const { email, otp } = req.body;
 
@@ -484,30 +489,30 @@ class AuthHandler {
 
       const user = await User.findOne({ email });
       if (!user) {
-        return res.status(404).json({ 
-          success: false, 
-          error: 'User not found' 
+        return res.status(404).json({
+          success: false,
+          error: 'User not found'
         });
       }
 
       user.isEmailVerified = true;
       await user.save();
 
-      res.json({ 
-        success: true, 
-        message: 'Email verified successfully' 
+      res.json({
+        success: true,
+        message: 'Email verified successfully'
       });
     } catch (error) {
       console.error('Email verification error:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to verify email' 
+      res.status(500).json({
+        success: false,
+        error: 'Failed to verify email'
       });
     }
   }
 
   // Verify phone
-  static async verifyPhone(req, res) {
+  static async verifyPhone (req, res) {
     try {
       const { phone, otp, countryCode } = req.body;
 
@@ -518,33 +523,33 @@ class AuthHandler {
 
       const user = await User.findOne({ 'phone.number': phone });
       if (!user) {
-        return res.status(404).json({ 
-          success: false, 
-          error: 'User not found' 
+        return res.status(404).json({
+          success: false,
+          error: 'User not found'
         });
       }
 
       user.isPhoneVerified = true;
       await user.save();
 
-      res.json({ 
-        success: true, 
-        message: 'Phone verified successfully' 
+      res.json({
+        success: true,
+        message: 'Phone verified successfully'
       });
     } catch (error) {
       console.error('Phone verification error:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to verify phone' 
+      res.status(500).json({
+        success: false,
+        error: 'Failed to verify phone'
       });
     }
   }
 
   // Logout from current device
-  static async logout(req, res) {
+  static async logout (req, res) {
     try {
       const session = req.session;
-      
+
       if (!session) {
         return res.status(401).json({
           status: 'error',
@@ -578,16 +583,16 @@ class AuthHandler {
   }
 
   // Logout from all devices
-  static async logoutAll(req, res) {
+  static async logoutAll (req, res) {
     try {
       // Update all active sessions for the user
       await Session.updateMany(
-        { 
+        {
           userId: req.user._id,
-          isActive: true 
+          isActive: true
         },
-        { 
-          $set: { 
+        {
+          $set: {
             isActive: false,
             loggedOutAt: new Date()
           }
@@ -608,4 +613,4 @@ class AuthHandler {
   }
 }
 
-module.exports = AuthHandler; 
+module.exports = AuthHandler;

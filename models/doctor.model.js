@@ -195,7 +195,7 @@ const doctorSchema = new mongoose.Schema({
   liabilityInsuranceInsurer: { type: String, default: '' }, // Insurer
   liabilityInsuranceDocument: { type: String, default: '' }, // S3 URL for uploaded insurance document
   hasCertificateOfConduct: { type: Boolean, default: false }, // Has certificate of conduct (VOG)
-  certificateOfConductDocument: { type: String, default: '' }, // S3 URL for uploaded certificate of conduct
+  certificateOfConductDocument: { type: String, default: '' } // S3 URL for uploaded certificate of conduct
 }, {
   timestamps: true
 });
@@ -208,8 +208,8 @@ doctorSchema.index({ status: 1 });
 
 // Index for text search
 doctorSchema.index({
-  'specializations': 'text',
-  'about': 'text',
+  specializations: 'text',
+  about: 'text',
   'education.degree': 'text',
   'education.institution': 'text',
   'training.name': 'text',
