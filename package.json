@@ -14,8 +14,7 @@
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
     "build": "echo 'No build step required for Node.js application'",
-    "prepare": "npm run lint && npm test",
-    "deploy:package": "tar --exclude='node_modules' --exclude='.git' --exclude='logs' --exclude='coverage' --exclude='.nyc_output' -czf med-connecter.tar.gz ."
+    "prepare": "npm run lint && npm test"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.525.0",

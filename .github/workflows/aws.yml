@@ -4,13 +4,13 @@
 # To use this workflow, you will need to complete the following set-up steps:
 #
 # 1. Create an ECR repository to store your images.
-#    For example: `aws ecr create-repository --repository-name my-ecr-repo --region us-east-2`.
+#    For example: `aws ecr create-repository --repository-name med-connecter --region us-east-1`.
 #    Replace the value of the `ECR_REPOSITORY` environment variable in the workflow below with your repository's name.
 #    Replace the value of the `AWS_REGION` environment variable in the workflow below with your repository's region.
 #
 # 2. Create an ECS task definition, an ECS cluster, and an ECS service.
 #    For example, follow the Getting Started guide on the ECS console:
-#      https://us-east-2.console.aws.amazon.com/ecs/home?region=us-east-2#/firstRun
+#      https://us-east-1.console.aws.amazon.com/ecs/home?region=us-east-1#/firstRun
 #    Replace the value of the `ECS_SERVICE` environment variable in the workflow below with the name you set for the Amazon ECS service.
 #    Replace the value of the `ECS_CLUSTER` environment variable in the workflow below with the name you set for the cluster.
 #
@@ -24,30 +24,93 @@
 #    See the documentation for each action used below for the recommended IAM policies for this IAM user,
 #    and best practices on handling the access key credentials.
 
-name: Deploy to Amazon ECS
+name: Deploy Med Connecter to Amazon ECS
 
 on:
   push:
     branches: [ "main" ]
 
 env:
-  AWS_REGION: MY_AWS_REGION                   # set this to your preferred AWS region, e.g. us-west-1
-  ECR_REPOSITORY: MY_ECR_REPOSITORY           # set this to your Amazon ECR repository name
-  ECS_SERVICE: MY_ECS_SERVICE                 # set this to your Amazon ECS service name
-  ECS_CLUSTER: MY_ECS_CLUSTER                 # set this to your Amazon ECS cluster name
-  ECS_TASK_DEFINITION: MY_ECS_TASK_DEFINITION # set this to the path to your Amazon ECS task definition
+  AWS_REGION: us-east-1                    # set this to your preferred AWS region, e.g. us-west-1
+  ECR_REPOSITORY: med-connecter           # set this to your Amazon ECR repository name
+  ECS_SERVICE: med-connecter-service      # set this to your Amazon ECS service name
+  ECS_CLUSTER: med-connecter-cluster      # set this to your Amazon ECS cluster name
+  ECS_TASK_DEFINITION: .aws/task-definition.json # set this to the path to your Amazon ECS task definition
                                                # file, e.g. .aws/task-definition.json
-  CONTAINER_NAME: MY_CONTAINER_NAME           # set this to the name of the container in the
-                                               # containerDefinitions section of your task definition
+  CONTAINER_NAME: med-connecter           # set this to the name of the container in the
+                                               # containerDefinitions section of the task definition
 
 permissions:
   contents: read
 
 jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Use Node.js 23.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '23.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Run tests
+      run: npm test
+      env:
+        NODE_ENV: test
+        PORT: 8080
+        MONGODB_URI: ${{ secrets.MONGODB_URI_TEST }}
+        JWT_SECRET: test-secret-key
+        FRONTEND_URL: http://localhost:3000
+        LOG_LEVEL: info
+        SWAGGER_ENABLED: true
+        API_URL: http://localhost:8080
+        EMAIL_HOST: smtp.gmail.com
+        EMAIL_PORT: 587
+        EMAIL_SECURE: false
+        EMAIL_USER: test@example.com
+        EMAIL_PASS: test-password
+        EMAIL_FROM: noreply@medconnecter.com
+        SMS_PROVIDER: twilio
+        SMS_API_KEY: test-sms-api-key
+        SMS_FROM: +1234567890
+        BIG_REGISTER_API_URL: https://api.bigregister.nl/v1
+        BIG_REGISTER_API_KEY: test-big-register-key
+        AWS_ACCESS_KEY_ID: test-aws-key
+        AWS_SECRET_ACCESS_KEY: test-aws-secret
+        AWS_REGION: us-east-1
+        AWS_S3_BUCKET_NAME: test-bucket
+        AWS_SQS_QUEUE_URL: https://sqs.us-east-1.amazonaws.com/test-queue
+        AWS_SNS_TOPIC_ARN: arn:aws:sns:us-east-1:123456789012:test-topic
+        VIDEO_CALL_PROVIDER: twilio
+        VIDEO_CALL_API_KEY: test-video-key
+        VIDEO_CALL_API_SECRET: test-video-secret
+        ADMIN_EMAIL: admin@medconnecter.com
+        ADMIN_PASSWORD: admin-password
+        CLOUD_STORAGE_PROVIDER: aws
+        CLOUD_STORAGE_BUCKET: test-cloud-bucket
+        CLOUD_STORAGE_REGION: us-east-1
+        ENABLE_EMAIL_NOTIFICATIONS: true
+        ENABLE_SMS_NOTIFICATIONS: true
+        ENABLE_PUSH_NOTIFICATIONS: true
+        CORS_ORIGIN: http://localhost:3000
+        MONGO_URI: ${{ secrets.MONGODB_URI_TEST }}
+
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
     environment: production
+    needs: test
 
     steps:
     - name: Checkout
