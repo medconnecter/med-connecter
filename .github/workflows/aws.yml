@@ -30,8 +30,13 @@ on:
   push:
     branches: [ "main" ]
 
+# Prevent concurrent deployments
+concurrency:
+  group: production
+  cancel-in-progress: false
+
 env:
-  AWS_REGION: us-east-1                    # set this to your preferred AWS region, e.g. us-west-1
+  AWS_REGION: ${{ secrets.AWS_REGION }}    # set this to your preferred AWS region, e.g. us-west-1
   ECR_REPOSITORY: med-connecter           # set this to your Amazon ECR repository name
   ECS_SERVICE: med-connecter-service      # set this to your Amazon ECS service name
   ECS_CLUSTER: med-connecter-cluster      # set this to your Amazon ECS cluster name
@@ -69,48 +74,50 @@ jobs:
       env:
         NODE_ENV: test
         PORT: 8080
-        MONGODB_URI: ${{ secrets.MONGODB_URI_TEST }}
+        MONGODB_URI: ${{ secrets.MONGODB_URI_TEST || 'mongodb://localhost:27017/med-connecter-test' }}
         JWT_SECRET: test-secret-key
         FRONTEND_URL: http://localhost:3000
         LOG_LEVEL: info
         SWAGGER_ENABLED: true
         API_URL: http://localhost:8080
-        EMAIL_HOST: smtp.gmail.com
-        EMAIL_PORT: 587
-        EMAIL_SECURE: false
+        SMTP_HOST: smtp.gmail.com
+        SMTP_PORT: 587
+        SMTP_SECURE: false
         EMAIL_USER: test@example.com
-        EMAIL_PASS: test-password
+        EMAIL_PASS: ${{ secrets.SMTP_PASS }}
         EMAIL_FROM: noreply@medconnecter.com
         SMS_PROVIDER: twilio
         SMS_API_KEY: test-sms-api-key
         SMS_FROM: +1234567890
         BIG_REGISTER_API_URL: https://api.bigregister.nl/v1
         BIG_REGISTER_API_KEY: test-big-register-key
-        AWS_ACCESS_KEY_ID: test-aws-key
-        AWS_SECRET_ACCESS_KEY: test-aws-secret
-        AWS_REGION: us-east-1
-        AWS_S3_BUCKET_NAME: test-bucket
-        AWS_SQS_QUEUE_URL: https://sqs.us-east-1.amazonaws.com/test-queue
-        AWS_SNS_TOPIC_ARN: arn:aws:sns:us-east-1:123456789012:test-topic
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
+        # AWS_SQS_QUEUE_URL: https://sqs.${{ secrets.AWS_REGION }}.amazonaws.com/test-queue  # Not used in current code
+        # AWS_SNS_TOPIC_ARN: arn:aws:sns:${{ secrets.AWS_REGION }}:123456789012:test-topic  # Not used in current code
         VIDEO_CALL_PROVIDER: twilio
         VIDEO_CALL_API_KEY: test-video-key
         VIDEO_CALL_API_SECRET: test-video-secret
         ADMIN_EMAIL: admin@medconnecter.com
         ADMIN_PASSWORD: admin-password
         CLOUD_STORAGE_PROVIDER: aws
-        CLOUD_STORAGE_BUCKET: test-cloud-bucket
-        CLOUD_STORAGE_REGION: us-east-1
+        CLOUD_STORAGE_BUCKET: ${{ secrets.AWS_S3_BUCKET_NAME }}
+        CLOUD_STORAGE_REGION: ${{ secrets.AWS_REGION }}
         ENABLE_EMAIL_NOTIFICATIONS: true
         ENABLE_SMS_NOTIFICATIONS: true
         ENABLE_PUSH_NOTIFICATIONS: true
         CORS_ORIGIN: http://localhost:3000
-        MONGO_URI: ${{ secrets.MONGODB_URI_TEST }}
+        MONGO_URI: ${{ secrets.MONGODB_URI_TEST || 'mongodb://localhost:27017/med-connecter-test' }}
+        MONGODB_URI: ${{ secrets.MONGODB_URI_TEST || 'mongodb://localhost:27017/med-connecter-test' }}
 
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
     environment: production
     needs: test
+    timeout-minutes: 30
 
     steps:
     - name: Checkout
@@ -122,6 +129,24 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
+
+    - name: Validate task definition
+      run: |
+        echo "🔍 Validating task definition..."
+        if [ ! -f "${{ env.ECS_TASK_DEFINITION }}" ]; then
+          echo "❌ Task definition file not found: ${{ env.ECS_TASK_DEFINITION }}"
+          exit 1
+        fi
+        echo "✅ Task definition file exists"
+        
+        # Validate JSON syntax
+        jq . "${{ env.ECS_TASK_DEFINITION }}" > /dev/null
+        if [ $? -eq 0 ]; then
+          echo "✅ Task definition JSON is valid"
+        else
+          echo "❌ Task definition JSON is invalid"
+          exit 1
+        fi
 
     - name: Login to Amazon ECR
       id: login-ecr
@@ -140,13 +165,16 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-    - name: Fill in the new image ID in the Amazon ECS task definition
+    - name: Fill in the new image ID and replace placeholders in the Amazon ECS task definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: ${{ env.ECS_TASK_DEFINITION }}
         container-name: ${{ env.CONTAINER_NAME }}
         image: ${{ steps.build-image.outputs.image }}
+        substitutions: |
+          AWS_ACCOUNT_ID=${{ steps.login-ecr.outputs.registry | split: '.' | first | split: '/' | last }}
+          AWS_REGION=${{ secrets.AWS_REGION }}
 
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -155,3 +183,14 @@ jobs:
         service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: true
+        wait-for-minutes: 10
+
+    - name: Verify deployment
+      run: |
+        echo "✅ Deployment completed successfully!"
+        echo "🔍 Checking service status..."
+        aws ecs describe-services \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --services ${{ env.ECS_SERVICE }} \
+          --query 'services[0].status' \
+          --output text

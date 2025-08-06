@@ -5,7 +5,7 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 // AWS Configuration
 const awsConfig = {
-  region: process.env.AWS_REGION || 'eu-west-1',
+  region: process.env.AWS_REGION,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY

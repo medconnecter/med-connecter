@@ -277,17 +277,23 @@ Add the following secrets to your GitHub repository:
 
 - `AWS_ACCESS_KEY_ID`: Your AWS access key
 - `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
+- `AWS_REGION`: Your AWS region (e.g., us-east-1, us-west-2, eu-west-1)
+- `AWS_S3_BUCKET_NAME`: Your S3 bucket name
+- `SMTP_PASS`: Your email password
 - `MONGODB_URI_TEST`: Test MongoDB connection string
 
-**Note**: The test environment uses mock values for most environment variables to ensure tests can run without external dependencies. Only `MONGODB_URI_TEST` needs to be a real test database connection string.
+**Note**: The test environment uses your actual AWS credentials and SMTP password for testing, while other values are mock data to ensure tests can run without external dependencies.
 
-## Step 9: Update Task Definition
+## Step 9: Task Definition (Auto-Generated)
 
-Update the `.aws/task-definition.json` file:
+The task definition is automatically generated from the template during deployment. The workflow will:
 
-1. Replace `YOUR_ACCOUNT_ID` with your actual AWS account ID
-2. Update the image URI with your ECR repository URI
-3. Update the ARNs for IAM roles
+1. Use your AWS account ID (automatically detected)
+2. Use your AWS region from GitHub secrets
+3. Generate the proper ECR repository URI
+4. Update all ARNs with your account ID
+
+**Note**: The task definition is generated from `.aws/task-definition-template.json` and saved as `.aws/task-definition.json` during deployment.
 
 ## Step 10: Deploy
 
