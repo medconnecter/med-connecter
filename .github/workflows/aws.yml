@@ -136,43 +136,37 @@ jobs:
         # Create a copy of the task definition
         cp ${{ env.ECS_TASK_DEFINITION }} task-definition-rendered.json
         
-        # Function to escape special characters for sed
-        escape_sed() {
-          echo "$1" | sed 's/[[\.*^$()+?{|]/\\&/g'
-        }
-        
-        # Replace placeholders using sed with proper escaping
-        ACCOUNT_ID_ESCAPED=$(escape_sed "${{ steps.account-id.outputs.account_id }}")
-        AWS_REGION_ESCAPED=$(escape_sed "${{ secrets.AWS_REGION }}")
-        MONGODB_URI_ESCAPED=$(escape_sed "${{ secrets.MONGODB_URI_TEST }}")
-        JWT_SECRET_ESCAPED=$(escape_sed "${{ secrets.JWT_SECRET }}")
-        SMTP_USER_ESCAPED=$(escape_sed "${{ secrets.SMTP_USER }}")
-        SMTP_PASS_ESCAPED=$(escape_sed "${{ secrets.SMTP_PASS }}")
-        AWS_ACCESS_KEY_ID_ESCAPED=$(escape_sed "${{ secrets.AWS_ACCESS_KEY_ID }}")
-        AWS_SECRET_ACCESS_KEY_ESCAPED=$(escape_sed "${{ secrets.AWS_SECRET_ACCESS_KEY }}")
-        AWS_S3_BUCKET_NAME_ESCAPED=$(escape_sed "${{ secrets.AWS_S3_BUCKET_NAME }}")
-        API_URL_ESCAPED=$(escape_sed "${{ steps.account-id.outputs.api_url }}")
-        IMAGE_ESCAPED=$(escape_sed "${{ steps.build-image.outputs.image }}")
-        
-        # Replace placeholders
-        sed -i "s/{{AWS_ACCOUNT_ID}}/${ACCOUNT_ID_ESCAPED}/g" task-definition-rendered.json
-        sed -i "s/{{AWS_REGION}}/${AWS_REGION_ESCAPED}/g" task-definition-rendered.json
-        sed -i "s/{{MONGODB_URI}}/${MONGODB_URI_ESCAPED}/g" task-definition-rendered.json
-        sed -i "s/{{JWT_SECRET}}/${JWT_SECRET_ESCAPED}/g" task-definition-rendered.json
-        sed -i "s/{{SMTP_USER}}/${SMTP_USER_ESCAPED}/g" task-definition-rendered.json
-        sed -i "s/{{SMTP_PASS}}/${SMTP_PASS_ESCAPED}/g" task-definition-rendered.json
-        sed -i "s/{{AWS_ACCESS_KEY_ID}}/${AWS_ACCESS_KEY_ID_ESCAPED}/g" task-definition-rendered.json
-        sed -i "s/{{AWS_SECRET_ACCESS_KEY}}/${AWS_SECRET_ACCESS_KEY_ESCAPED}/g" task-definition-rendered.json
-        sed -i "s/{{AWS_S3_BUCKET_NAME}}/${AWS_S3_BUCKET_NAME_ESCAPED}/g" task-definition-rendered.json
-        sed -i "s|{{API_URL}}|${API_URL_ESCAPED}|g" task-definition-rendered.json
+        # Use perl for more robust text replacement
+        perl -pi -e 's/\{\{AWS_ACCOUNT_ID\}\}/$ENV{ACCOUNT_ID}/g' task-definition-rendered.json
+        perl -pi -e 's/\{\{AWS_REGION\}\}/$ENV{AWS_REGION}/g' task-definition-rendered.json
+        perl -pi -e 's/\{\{MONGODB_URI\}\}/$ENV{MONGODB_URI}/g' task-definition-rendered.json
+        perl -pi -e 's/\{\{JWT_SECRET\}\}/$ENV{JWT_SECRET}/g' task-definition-rendered.json
+        perl -pi -e 's/\{\{SMTP_USER\}\}/$ENV{SMTP_USER}/g' task-definition-rendered.json
+        perl -pi -e 's/\{\{SMTP_PASS\}\}/$ENV{SMTP_PASS}/g' task-definition-rendered.json
+        perl -pi -e 's/\{\{AWS_ACCESS_KEY_ID\}\}/$ENV{AWS_ACCESS_KEY_ID}/g' task-definition-rendered.json
+        perl -pi -e 's/\{\{AWS_SECRET_ACCESS_KEY\}\}/$ENV{AWS_SECRET_ACCESS_KEY}/g' task-definition-rendered.json
+        perl -pi -e 's/\{\{AWS_S3_BUCKET_NAME\}\}/$ENV{AWS_S3_BUCKET_NAME}/g' task-definition-rendered.json
+        perl -pi -e 's/\{\{API_URL\}\}/$ENV{API_URL}/g' task-definition-rendered.json
         
         # Replace the image
-        sed -i "s|{{AWS_ACCOUNT_ID}}.dkr.ecr.{{AWS_REGION}}.amazonaws.com/med-connecter:latest|${IMAGE_ESCAPED}|g" task-definition-rendered.json
+        perl -pi -e 's/\{\{AWS_ACCOUNT_ID\}\}\.dkr\.ecr\.\{\{AWS_REGION\}\}\.amazonaws\.com\/med-connecter:latest/$ENV{IMAGE}/g' task-definition-rendered.json
         
         echo "✅ Task definition rendered successfully"
         
         # Output the rendered task definition for the next step
-        echo "task-definition=$(pwd)/task-definition-rendered.json" >> $GITHUB_OUTPUT
+        echo "task-definition=task-definition-rendered.json" >> $GITHUB_OUTPUT
+      env:
+        ACCOUNT_ID: ${{ steps.account-id.outputs.account_id }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        MONGODB_URI: ${{ secrets.MONGODB_URI_TEST }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        SMTP_USER: ${{ secrets.SMTP_USER }}
+        SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
+        API_URL: ${{ steps.account-id.outputs.api_url }}
+        IMAGE: ${{ steps.build-image.outputs.image }}
 
     - name: Print All Environment Variables (DEBUG - REMOVE LATER)
       run: |
@@ -258,7 +252,7 @@ jobs:
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        task-definition: task-definition-rendered.json
         service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: true
