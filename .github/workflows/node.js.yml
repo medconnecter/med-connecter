@@ -41,7 +41,7 @@ jobs:
         JWT_SECRET: test-secret-key
     
     - name: Upload test coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       if: matrix.node-version == '23.x'
       with:
         file: ./coverage/lcov.info
@@ -90,7 +90,7 @@ jobs:
         tar --exclude='node_modules' --exclude='.git' --exclude='logs' --exclude='coverage' --exclude='.nyc_output' -czf dist/med-connecter.tar.gz .
     
     - name: Upload deployment package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: med-connecter-deployment
         path: dist/med-connecter.tar.gz
