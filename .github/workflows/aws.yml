@@ -110,7 +110,6 @@ jobs:
         ENABLE_PUSH_NOTIFICATIONS: true
         CORS_ORIGIN: http://localhost:3000
         MONGO_URI: ${{ secrets.MONGODB_URI_TEST || 'mongodb://localhost:27017/med-connecter-test' }}
-        MONGODB_URI: ${{ secrets.MONGODB_URI_TEST || 'mongodb://localhost:27017/med-connecter-test' }}
 
   deploy:
     name: Deploy
@@ -165,6 +164,12 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
+    - name: Get AWS Account ID
+      id: account-id
+      run: |
+        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+
     - name: Fill in the new image ID and replace placeholders in the Amazon ECS task definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -173,7 +178,7 @@ jobs:
         container-name: ${{ env.CONTAINER_NAME }}
         image: ${{ steps.build-image.outputs.image }}
         substitutions: |
-          AWS_ACCOUNT_ID=${{ steps.login-ecr.outputs.registry | split: '.' | first | split: '/' | last }}
+          AWS_ACCOUNT_ID=${{ steps.account-id.outputs.account_id }}
           AWS_REGION=${{ secrets.AWS_REGION }}
 
     - name: Deploy Amazon ECS task definition
