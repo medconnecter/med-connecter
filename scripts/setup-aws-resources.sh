@@ -410,13 +410,13 @@ update_task_definition() {
     # Create backup
     cp .aws/task-definition.json .aws/task-definition.json.backup
     
-    # Replace placeholders
-    sed -i.bak "s/{{AWS_ACCOUNT_ID}}/${ACCOUNT_ID}/g" .aws/task-definition.json
-    sed -i.bak "s/{{AWS_REGION}}/${REGION}/g" .aws/task-definition.json
+    # Replace placeholders using perl for better handling of special characters
+    perl -pi -e "s/\\{\\{AWS_ACCOUNT_ID\\}\\}/${ACCOUNT_ID}/g" .aws/task-definition.json
+    perl -pi -e "s/\\{\\{AWS_REGION\\}\\}/${REGION}/g" .aws/task-definition.json
     
     # Replace IMAGE_TAG placeholder with a temporary value for setup
     # This will be replaced by the GitHub workflow during deployment
-    sed -i.bak "s/{{IMAGE_TAG}}/latest/g" .aws/task-definition.json
+    perl -pi -e "s/\\{\\{IMAGE_TAG\\}\\}/latest/g" .aws/task-definition.json
     
     echo -e "${GREEN}✅ Task definition updated${NC}"
     echo ""
