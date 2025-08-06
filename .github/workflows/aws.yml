@@ -140,6 +140,7 @@ jobs:
           AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_S3_BUCKET_NAME=${{ secrets.AWS_S3_BUCKET_NAME }}
+          API_URL=http://med-connecter-alb-{{ steps.account-id.outputs.account_id }}.{{ secrets.AWS_REGION }}.elb.amazonaws.com
 
     - name: Print All Environment Variables (DEBUG - REMOVE LATER)
       run: |
@@ -153,7 +154,7 @@ jobs:
         echo "SWAGGER_ENABLED: true"
         echo "API_URL: https://your-api-domain.com"
         echo "SMTP_HOST: smtp.gmail.com"
-        echo "SMTP_PORT: 587"
+        echo "SMTP_PORT: 465"
         echo "SMTP_SECURE: false"
         echo "EMAIL_FROM: medconnecter@gmail.com"
         echo "SMS_PROVIDER: twilio"

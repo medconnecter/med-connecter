@@ -195,6 +195,126 @@ setup_networking() {
 
 
 
+# Function to create Application Load Balancer
+create_load_balancer() {
+    echo -e "${YELLOW}🔍 Creating Application Load Balancer...${NC}"
+    
+    # Create security group for ALB
+    ALB_SECURITY_GROUP_NAME="${PROJECT_NAME}-alb-sg"
+    ALB_SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=${ALB_SECURITY_GROUP_NAME}" --query 'SecurityGroups[0].GroupId' --output text --region "${REGION}" 2>/dev/null || echo "")
+    
+    if [ -z "$ALB_SECURITY_GROUP_ID" ] || [ "$ALB_SECURITY_GROUP_ID" = "None" ]; then
+        echo -e "${YELLOW}Creating ALB security group...${NC}"
+        ALB_SECURITY_GROUP_ID=$(aws ec2 create-security-group \
+            --group-name "${ALB_SECURITY_GROUP_NAME}" \
+            --description "Security group for ${PROJECT_NAME} ALB" \
+            --vpc-id "${VPC_ID}" \
+            --region "${REGION}" \
+            --query 'GroupId' \
+            --output text)
+        
+        # Add inbound rules for ALB
+        aws ec2 authorize-security-group-ingress \
+            --group-id "${ALB_SECURITY_GROUP_ID}" \
+            --protocol tcp \
+            --port 80 \
+            --cidr 0.0.0.0/0 \
+            --region "${REGION}"
+        
+        aws ec2 authorize-security-group-ingress \
+            --group-id "${ALB_SECURITY_GROUP_ID}" \
+            --protocol tcp \
+            --port 443 \
+            --cidr 0.0.0.0/0 \
+            --region "${REGION}"
+        
+        echo -e "${GREEN}✅ ALB security group created: ${ALB_SECURITY_GROUP_ID}${NC}"
+    else
+        echo -e "${GREEN}✅ ALB security group already exists: ${ALB_SECURITY_GROUP_ID}${NC}"
+    fi
+    
+    # Create target group
+    TARGET_GROUP_NAME="${PROJECT_NAME}-tg"
+    TARGET_GROUP_ARN=$(aws elbv2 describe-target-groups --names "${TARGET_GROUP_NAME}" --region "${REGION}" --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null || echo "")
+    
+    if [ -z "$TARGET_GROUP_ARN" ] || [ "$TARGET_GROUP_ARN" = "None" ]; then
+        echo -e "${YELLOW}Creating target group...${NC}"
+        TARGET_GROUP_ARN=$(aws elbv2 create-target-group \
+            --name "${TARGET_GROUP_NAME}" \
+            --protocol HTTP \
+            --port 8080 \
+            --vpc-id "${VPC_ID}" \
+            --target-type ip \
+            --health-check-path /health \
+            --health-check-interval-seconds 30 \
+            --health-check-timeout-seconds 5 \
+            --healthy-threshold-count 2 \
+            --unhealthy-threshold-count 2 \
+            --region "${REGION}" \
+            --query 'TargetGroups[0].TargetGroupArn' \
+            --output text)
+        
+        echo -e "${GREEN}✅ Target group created: ${TARGET_GROUP_ARN}${NC}"
+    else
+        echo -e "${GREEN}✅ Target group already exists: ${TARGET_GROUP_ARN}${NC}"
+    fi
+    
+    # Create load balancer
+    ALB_NAME="${PROJECT_NAME}-alb"
+    ALB_ARN=$(aws elbv2 describe-load-balancers --names "${ALB_NAME}" --region "${REGION}" --query 'LoadBalancers[0].LoadBalancerArn' --output text 2>/dev/null || echo "")
+    
+    if [ -z "$ALB_ARN" ] || [ "$ALB_ARN" = "None" ]; then
+        echo -e "${YELLOW}Creating Application Load Balancer...${NC}"
+        
+        # Get subnet IDs for ALB (public subnets)
+        PUBLIC_SUBNET_IDS=$(aws ec2 describe-subnets \
+            --filters "Name=vpc-id,Values=${VPC_ID}" "Name=map-public-ip-on-launch,Values=true" \
+            --query 'Subnets[*].SubnetId' \
+            --output text \
+            --region "${REGION}" | tr '\t' ',' | sed 's/,$//')
+        
+        ALB_ARN=$(aws elbv2 create-load-balancer \
+            --name "${ALB_NAME}" \
+            --subnets $(echo "${PUBLIC_SUBNET_IDS}" | tr ',' ' ') \
+            --security-groups "${ALB_SECURITY_GROUP_ID}" \
+            --scheme internet-facing \
+            --type application \
+            --region "${REGION}" \
+            --query 'LoadBalancers[0].LoadBalancerArn' \
+            --output text)
+        
+        echo -e "${GREEN}✅ Load balancer created: ${ALB_ARN}${NC}"
+        
+        # Wait for ALB to be active
+        echo -e "${YELLOW}Waiting for load balancer to be active...${NC}"
+        aws elbv2 wait load-balancer-available --load-balancer-arns "${ALB_ARN}" --region "${REGION}"
+        
+        # Get ALB DNS name
+        ALB_DNS_NAME=$(aws elbv2 describe-load-balancers --load-balancer-arns "${ALB_ARN}" --region "${REGION}" --query 'LoadBalancers[0].DNSName' --output text)
+        echo -e "${GREEN}✅ Load balancer DNS: ${ALB_DNS_NAME}${NC}"
+        
+        # Create listener
+        echo -e "${YELLOW}Creating ALB listener...${NC}"
+        aws elbv2 create-listener \
+            --load-balancer-arn "${ALB_ARN}" \
+            --protocol HTTP \
+            --port 80 \
+            --default-actions Type=forward,TargetGroupArn="${TARGET_GROUP_ARN}" \
+            --region "${REGION}"
+        
+        echo -e "${GREEN}✅ ALB listener created${NC}"
+    else
+        echo -e "${GREEN}✅ Load balancer already exists: ${ALB_ARN}${NC}"
+        ALB_DNS_NAME=$(aws elbv2 describe-load-balancers --load-balancer-arns "${ALB_ARN}" --region "${REGION}" --query 'LoadBalancers[0].DNSName' --output text)
+    fi
+    
+    # Store ALB DNS name for later use
+    echo "${ALB_DNS_NAME}" > .alb-dns-name
+    echo -e "${BLUE}📋 ALB DNS Name: ${ALB_DNS_NAME}${NC}"
+    echo -e "${BLUE}📋 Swagger URL: http://${ALB_DNS_NAME}/api-docs${NC}"
+    echo ""
+}
+
 # Function to create S3 bucket
 create_s3_bucket() {
     echo -e "${YELLOW}🔍 Creating S3 bucket...${NC}"
@@ -281,15 +401,19 @@ create_ecs_service() {
         # Get security group ID
         SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=${VPC_ID}" "Name=group-name,Values=default" --query 'SecurityGroups[0].GroupId' --output text --region "${REGION}")
         
+        # Get target group ARN
+        TARGET_GROUP_ARN=$(aws elbv2 describe-target-groups --names "${PROJECT_NAME}-tg" --region "${REGION}" --query 'TargetGroups[0].TargetGroupArn' --output text)
+        
         echo -e "${YELLOW}Using subnets: ${SUBNET_IDS}${NC}"
         echo -e "${YELLOW}Using security group: ${SECURITY_GROUP_ID}${NC}"
+        echo -e "${YELLOW}Using target group: ${TARGET_GROUP_ARN}${NC}"
         
         # Register task definition first
         echo -e "${YELLOW}Registering task definition...${NC}"
         aws ecs register-task-definition --cli-input-json file://.aws/task-definition.json --region "${REGION}"
         
-        # Create service
-        echo -e "${YELLOW}Creating ECS service...${NC}"
+        # Create service with load balancer
+        echo -e "${YELLOW}Creating ECS service with load balancer...${NC}"
         aws ecs create-service \
             --cluster "${CLUSTER_NAME}" \
             --service-name "${SERVICE_NAME}" \
@@ -297,10 +421,11 @@ create_ecs_service() {
             --desired-count 2 \
             --launch-type FARGATE \
             --network-configuration "awsvpcConfiguration={subnets=[${SUBNET_IDS}],securityGroups=[${SECURITY_GROUP_ID}],assignPublicIp=ENABLED}" \
+            --load-balancers "targetGroupArn=${TARGET_GROUP_ARN},containerName=${PROJECT_NAME},containerPort=8080" \
             --region "${REGION}"
         
         if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✅ ECS service created successfully${NC}"
+            echo -e "${GREEN}✅ ECS service created successfully with load balancer${NC}"
         else
             echo -e "${RED}❌ Failed to create ECS service${NC}"
             exit 1
@@ -313,12 +438,21 @@ create_ecs_service() {
 display_next_steps() {
     echo -e "${BLUE}🎉 AWS resources setup completed!${NC}"
     echo ""
+    
+    # Read ALB DNS name if available
+    if [ -f ".alb-dns-name" ]; then
+        ALB_DNS_NAME=$(cat .alb-dns-name)
+        echo -e "${GREEN}🌐 Load Balancer DNS: ${ALB_DNS_NAME}${NC}"
+        echo -e "${GREEN}📚 Swagger Documentation: http://${ALB_DNS_NAME}/api-docs${NC}"
+        echo -e "${GREEN}🏥 Health Check: http://${ALB_DNS_NAME}/health${NC}"
+        echo -e "${GREEN}🔗 API Base URL: http://${ALB_DNS_NAME}/api/v1${NC}"
+        echo ""
+    fi
+    
     echo -e "${YELLOW}📋 Next steps:${NC}"
-    echo "1. Update domain URLs in .aws/task-definition.json:"
-    echo "   - FRONTEND_URL"
-    echo "   - API_URL"
-    echo "   - CORS_ORIGIN"
-    echo "2. Push to main branch to trigger deployment"
+    echo "1. Push to main branch to trigger deployment"
+    echo "2. Wait for ECS service to be healthy"
+    echo "3. Access your API via the load balancer URL above"
     echo ""
     echo -e "${GREEN}✅ Setup complete!${NC}"
 }
@@ -332,6 +466,7 @@ main() {
     create_iam_roles
     create_ecs_cluster
     setup_networking
+    create_load_balancer
     create_s3_bucket
     # create_sqs_queue  # Commented out - not used in current code
     # create_sns_topic  # Commented out - not used in current code
