@@ -315,6 +315,38 @@ update_task_definition() {
     echo ""
 }
 
+# Function to create ECS service
+create_ecs_service() {
+    echo -e "${YELLOW}🔍 Creating ECS service...${NC}"
+    
+    # Check if service already exists
+    if aws ecs describe-services --cluster "${CLUSTER_NAME}" --services "${SERVICE_NAME}" --region "${REGION}" | grep -q "ACTIVE"; then
+        echo -e "${GREEN}✅ ECS service already exists${NC}"
+    else
+        # Get subnet IDs
+        SUBNET_IDS=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=${VPC_ID}" --query 'Subnets[*].SubnetId' --output text --region "${REGION}" | tr '\t' ',' | sed 's/,$//')
+        
+        # Get security group ID
+        SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=${VPC_ID}" "Name=group-name,Values=default" --query 'SecurityGroups[0].GroupId' --output text --region "${REGION}")
+        
+        # Register task definition first
+        aws ecs register-task-definition --cli-input-json file://.aws/task-definition.json --region "${REGION}"
+        
+        # Create service
+        aws ecs create-service \
+            --cluster "${CLUSTER_NAME}" \
+            --service-name "${SERVICE_NAME}" \
+            --task-definition "${PROJECT_NAME}:1" \
+            --desired-count 2 \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[${SUBNET_IDS}],securityGroups=[${SECURITY_GROUP_ID}],assignPublicIp=ENABLED}" \
+            --region "${REGION}"
+        
+        echo -e "${GREEN}✅ ECS service created${NC}"
+    fi
+    echo ""
+}
+
 # Function to display next steps
 display_next_steps() {
     echo -e "${BLUE}🎉 AWS resources setup completed!${NC}"
@@ -325,18 +357,7 @@ display_next_steps() {
     echo "   - FRONTEND_URL"
     echo "   - API_URL"
     echo "   - CORS_ORIGIN"
-    echo "3. Create ECS service manually (not automated for safety)"
-    echo "4. Push to main branch to trigger deployment"
-    echo ""
-    echo -e "${YELLOW}🔧 Manual ECS Service Creation:${NC}"
-    echo "aws ecs create-service \\"
-    echo "  --cluster ${CLUSTER_NAME} \\"
-    echo "  --service-name ${SERVICE_NAME} \\"
-    echo "  --task-definition ${PROJECT_NAME}:1 \\"
-    echo "  --desired-count 2 \\"
-    echo "  --launch-type FARGATE \\"
-    echo "  --network-configuration \"awsvpcConfiguration={subnets=[SUBNET_IDS],securityGroups=[SECURITY_GROUP_ID],assignPublicIp=ENABLED}\" \\"
-    echo "  --region ${REGION}"
+    echo "3. Push to main branch to trigger deployment"
     echo ""
     echo -e "${GREEN}✅ Setup complete!${NC}"
 }
@@ -355,6 +376,7 @@ main() {
     # create_sqs_queue  # Commented out - not used in current code
     # create_sns_topic  # Commented out - not used in current code
     update_task_definition
+    create_ecs_service
     display_next_steps
 }
 
