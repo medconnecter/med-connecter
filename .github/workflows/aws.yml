@@ -27,7 +27,10 @@
 name: Deploy Med Connecter to Amazon ECS
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Node.js CI/CD"]
+    types:
+      - completed
     branches: [ "main" ]
   workflow_dispatch:
 
@@ -57,17 +60,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 30
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-
-    - name: Setup AWS Resources
-      run: |
-        echo "🔧 Setting up AWS resources..."
-        chmod +x scripts/setup-aws-resources.sh
-        ./scripts/setup-aws-resources.sh
-        echo "✅ AWS resources setup completed"
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -75,6 +72,13 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Setup AWS Resources
+      run: |
+        echo "🔧 Setting up AWS resources..."
+        chmod +x scripts/setup-aws-resources.sh
+        ./scripts/setup-aws-resources.sh
+        echo "✅ AWS resources setup completed"
 
     - name: Validate task definition
       run: |
