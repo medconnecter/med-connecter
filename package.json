@@ -13,8 +13,7 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
-    "build": "echo 'No build step required for Node.js application'",
-    "prepare": "npm run lint && npm test"
+        "build": "echo 'No build step required for Node.js application'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.525.0",
