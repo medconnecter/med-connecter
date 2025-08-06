@@ -267,20 +267,29 @@ update_task_definition() {
 create_ecs_service() {
     echo -e "${YELLOW}🔍 Creating ECS service...${NC}"
     
-    # Check if service already exists
-    if aws ecs describe-services --cluster "${CLUSTER_NAME}" --services "${SERVICE_NAME}" --region "${REGION}" | grep -q "ACTIVE"; then
-        echo -e "${GREEN}✅ ECS service already exists${NC}"
+    # Check if service already exists and is active
+    SERVICE_STATUS=$(aws ecs describe-services --cluster "${CLUSTER_NAME}" --services "${SERVICE_NAME}" --region "${REGION}" --query 'services[0].status' --output text 2>/dev/null || echo "NONEXISTENT")
+    
+    if [ "$SERVICE_STATUS" = "ACTIVE" ]; then
+        echo -e "${GREEN}✅ ECS service already exists and is active${NC}"
     else
+        echo -e "${YELLOW}Service status: ${SERVICE_STATUS} - Creating/Updating service...${NC}"
+        
         # Get subnet IDs
         SUBNET_IDS=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=${VPC_ID}" --query 'Subnets[*].SubnetId' --output text --region "${REGION}" | tr '\t' ',' | sed 's/,$//')
         
         # Get security group ID
         SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=${VPC_ID}" "Name=group-name,Values=default" --query 'SecurityGroups[0].GroupId' --output text --region "${REGION}")
         
+        echo -e "${YELLOW}Using subnets: ${SUBNET_IDS}${NC}"
+        echo -e "${YELLOW}Using security group: ${SECURITY_GROUP_ID}${NC}"
+        
         # Register task definition first
+        echo -e "${YELLOW}Registering task definition...${NC}"
         aws ecs register-task-definition --cli-input-json file://.aws/task-definition.json --region "${REGION}"
         
         # Create service
+        echo -e "${YELLOW}Creating ECS service...${NC}"
         aws ecs create-service \
             --cluster "${CLUSTER_NAME}" \
             --service-name "${SERVICE_NAME}" \
@@ -290,7 +299,12 @@ create_ecs_service() {
             --network-configuration "awsvpcConfiguration={subnets=[${SUBNET_IDS}],securityGroups=[${SECURITY_GROUP_ID}],assignPublicIp=ENABLED}" \
             --region "${REGION}"
         
-        echo -e "${GREEN}✅ ECS service created${NC}"
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✅ ECS service created successfully${NC}"
+        else
+            echo -e "${RED}❌ Failed to create ECS service${NC}"
+            exit 1
+        fi
     fi
     echo ""
 }

@@ -183,6 +183,45 @@ jobs:
         echo ""
         echo "⚠️  WARNING: This step prints sensitive information for debugging. REMOVE AFTER DEBUGGING!"
 
+    - name: Check ECS Service Status
+      run: |
+        echo "🔍 Checking ECS service status..."
+        SERVICE_STATUS=$(aws ecs describe-services \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --services ${{ env.ECS_SERVICE }} \
+          --region ${{ secrets.AWS_REGION }} \
+          --query 'services[0].status' \
+          --output text 2>/dev/null || echo "NONEXISTENT")
+        
+        echo "Service status: $SERVICE_STATUS"
+        
+        if [ "$SERVICE_STATUS" = "NONEXISTENT" ]; then
+          echo "❌ Service does not exist. Creating it now..."
+          # Get subnet IDs
+          VPC_ID=$(aws ec2 describe-vpcs --filters "Name=is-default,Values=true" --query 'Vpcs[0].VpcId' --output text --region ${{ secrets.AWS_REGION }})
+          SUBNET_IDS=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=${VPC_ID}" --query 'Subnets[*].SubnetId' --output text --region ${{ secrets.AWS_REGION }} | tr '\t' ',' | sed 's/,$//')
+          SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=${VPC_ID}" "Name=group-name,Values=default" --query 'SecurityGroups[0].GroupId' --output text --region ${{ secrets.AWS_REGION }})
+          
+          # Register task definition
+          aws ecs register-task-definition --cli-input-json ${{ steps.task-def.outputs.task-definition }} --region ${{ secrets.AWS_REGION }}
+          
+          # Create service
+          aws ecs create-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service-name ${{ env.ECS_SERVICE }} \
+            --task-definition med-connecter:1 \
+            --desired-count 2 \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[${SUBNET_IDS}],securityGroups=[${SECURITY_GROUP_ID}],assignPublicIp=ENABLED}" \
+            --region ${{ secrets.AWS_REGION }}
+          
+          echo "✅ Service created successfully"
+        elif [ "$SERVICE_STATUS" = "ACTIVE" ]; then
+          echo "✅ Service exists and is active"
+        else
+          echo "⚠️ Service status: $SERVICE_STATUS"
+        fi
+
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
