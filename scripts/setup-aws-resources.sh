@@ -75,12 +75,12 @@ create_iam_roles() {
     echo -e "${YELLOW}🔍 Creating IAM roles...${NC}"
     
     # Create ECS Task Execution Role (Required for ECS)
-    if aws iam get-role --role-name ecsTaskExecutionRole &> /dev/null; then
+    if aws iam get-role --role-name ecsTaskExecutionRole-med-connecter &> /dev/null; then
         echo -e "${GREEN}✅ ECS Task Execution Role already exists${NC}"
     else
         echo -e "${YELLOW}Creating ECS Task Execution Role...${NC}"
         aws iam create-role \
-            --role-name ecsTaskExecutionRole \
+            --role-name ecsTaskExecutionRole-med-connecter \
             --assume-role-policy-document '{
                 "Version": "2012-10-17",
                 "Statement": [
@@ -95,36 +95,19 @@ create_iam_roles() {
             }'
         
         aws iam attach-role-policy \
-            --role-name ecsTaskExecutionRole \
+            --role-name ecsTaskExecutionRole-med-connecter \
             --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
         
-        aws iam put-role-policy \
-            --role-name ecsTaskExecutionRole \
-            --policy-name SecretsManagerAccess \
-            --policy-document "{
-                \"Version\": \"2012-10-17\",
-                \"Statement\": [
-                    {
-                        \"Effect\": \"Allow\",
-                        \"Action\": [
-                            \"secretsmanager:GetSecretValue\"
-                        ],
-                        \"Resource\": [
-                            \"arn:aws:secretsmanager:${REGION}:${ACCOUNT_ID}:secret:${PROJECT_NAME}/*\"
-                        ]
-                    }
-                ]
-            }"
         echo -e "${GREEN}✅ ECS Task Execution Role created${NC}"
     fi
     
     # Create ECS Task Role (Required for ECS)
-    if aws iam get-role --role-name ecsTaskRole &> /dev/null; then
+    if aws iam get-role --role-name ecsTaskRole-med-connecter &> /dev/null; then
         echo -e "${GREEN}✅ ECS Task Role already exists${NC}"
     else
         echo -e "${YELLOW}Creating ECS Task Role...${NC}"
         aws iam create-role \
-            --role-name ecsTaskRole \
+            --role-name ecsTaskRole-med-connecter \
             --assume-role-policy-document '{
                 "Version": "2012-10-17",
                 "Statement": [
@@ -139,8 +122,8 @@ create_iam_roles() {
             }'
         
         aws iam put-role-policy \
-            --role-name ecsTaskRole \
-            --policy-name ApplicationPermissions \
+            --role-name ecsTaskRole-med-connecter \
+            --policy-name S3AccessPolicy \
             --policy-document "{
                 \"Version\": \"2012-10-17\",
                 \"Statement\": [
@@ -149,9 +132,13 @@ create_iam_roles() {
                         \"Action\": [
                             \"s3:GetObject\",
                             \"s3:PutObject\",
-                            \"s3:DeleteObject\"
+                            \"s3:DeleteObject\",
+                            \"s3:ListBucket\"
                         ],
-                        \"Resource\": \"arn:aws:s3:::${PROJECT_NAME}-${ACCOUNT_ID}-${REGION}/*\"
+                        \"Resource\": [
+                            \"arn:aws:s3:::med-connecter-*\",
+                            \"arn:aws:s3:::med-connecter-*/*\"
+                        ]
                     }
                 ]
             }"
@@ -206,38 +193,7 @@ setup_networking() {
     echo ""
 }
 
-# Function to create secrets in AWS Secrets Manager
-create_secrets() {
-    echo -e "${YELLOW}🔍 Creating secrets in AWS Secrets Manager...${NC}"
-    
-    # Create secrets with proper values (only the ones actually used)
-    declare -A secret_values=(
-        ["mongodb-uri"]="${MONGODB_URI_TEST}"
-        ["jwt-secret"]="${JWT_SECRET}"
-        ["email-user"]="${SMTP_USER}"
-        ["email-pass"]="${SMTP_PASS}"
-        ["aws-access-key-id"]="${AWS_ACCESS_KEY_ID}"
-        ["aws-secret-access-key"]="${AWS_SECRET_ACCESS_KEY}"
-        ["aws-s3-bucket-name"]="${AWS_S3_BUCKET_NAME}"
-    )
-    
-    for secret in "${!secret_values[@]}"; do
-        secret_name="${PROJECT_NAME}/${secret}"
-        secret_value="${secret_values[$secret]}"
-        
-        if aws secretsmanager describe-secret --secret-id "${secret_name}" --region "${REGION}" &> /dev/null; then
-            echo -e "${GREEN}✅ Secret ${secret_name} already exists${NC}"
-        else
-            aws secretsmanager create-secret \
-                --name "${secret_name}" \
-                --description "${secret} for ${PROJECT_NAME}" \
-                --secret-string "${secret_value}" \
-                --region "${REGION}"
-            echo -e "${GREEN}✅ Secret ${secret_name} created${NC}"
-        fi
-    done
-    echo ""
-}
+
 
 # Function to create S3 bucket
 create_s3_bucket() {
@@ -362,7 +318,6 @@ main() {
     create_iam_roles
     create_ecs_cluster
     setup_networking
-    create_secrets
     create_s3_bucket
     # create_sqs_queue  # Commented out - not used in current code
     # create_sns_topic  # Commented out - not used in current code

@@ -73,7 +73,14 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
-
+    - name: Setup AWS Resources
+      env:
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+      run: |
+        echo "🔧 Setting up AWS resources..."
+        chmod +x scripts/setup-aws-resources.sh
+        ./scripts/setup-aws-resources.sh
+        echo "✅ AWS resources setup completed"
 
     - name: Validate task definition
       run: |
@@ -141,8 +148,7 @@ jobs:
         service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: true
-        wait-for-minutes: 5
-        timeout-minutes: 10
+        wait-for-minutes: 10
 
     - name: Verify deployment
       run: |
