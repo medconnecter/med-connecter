@@ -201,6 +201,30 @@ setup_networking() {
         --port 8080 \
         --cidr 0.0.0.0/0 \
         --region "${REGION}" 2>/dev/null || echo -e "${GREEN}✅ Security group rule already exists${NC}"
+    
+    # Add outbound rules for SMTP (ports 25, 465, 587)
+    echo -e "${YELLOW}Adding outbound SMTP rules...${NC}"
+    aws ec2 authorize-security-group-egress \
+        --group-id "${SECURITY_GROUP_ID}" \
+        --protocol tcp \
+        --port 25 \
+        --cidr 0.0.0.0/0 \
+        --region "${REGION}" 2>/dev/null || echo -e "${GREEN}✅ SMTP port 25 rule already exists${NC}"
+    
+    aws ec2 authorize-security-group-egress \
+        --group-id "${SECURITY_GROUP_ID}" \
+        --protocol tcp \
+        --port 465 \
+        --cidr 0.0.0.0/0 \
+        --region "${REGION}" 2>/dev/null || echo -e "${GREEN}✅ SMTP port 465 rule already exists${NC}"
+    
+    aws ec2 authorize-security-group-egress \
+        --group-id "${SECURITY_GROUP_ID}" \
+        --protocol tcp \
+        --port 587 \
+        --cidr 0.0.0.0/0 \
+        --region "${REGION}" 2>/dev/null || echo -e "${GREEN}✅ SMTP port 587 rule already exists${NC}"
+    
     echo ""
 }
 
@@ -429,7 +453,7 @@ create_ecs_service() {
             --cluster "${CLUSTER_NAME}" \
             --service-name "${SERVICE_NAME}" \
             --task-definition "${PROJECT_NAME}:1" \
-            --desired-count 2 \
+            --desired-count 1 \
             --launch-type FARGATE \
             --network-configuration "awsvpcConfiguration={subnets=[${SUBNET_IDS}],securityGroups=[${SECURITY_GROUP_ID}],assignPublicIp=ENABLED}" \
             --load-balancers "targetGroupArn=${TARGET_GROUP_ARN},containerName=${PROJECT_NAME},containerPort=8080" \

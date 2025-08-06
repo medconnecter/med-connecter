@@ -47,10 +47,10 @@ module.exports = {
     port: process.env.EMAIL_PORT || 587,
     secure: process.env.EMAIL_SECURE === 'true',
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
     },
-    from: process.env.EMAIL_FROM || 'noreply@medconnecter.com'
+    from: process.env.SMTP_FROM || 'noreply@medconnecter.com'
   },
 
   // SMS settings

@@ -25,7 +25,7 @@ env:
   MONGODB_URI: ${{ secrets.MONGODB_URI_TEST || 'mongodb://localhost:27017/med-connecter-test' }}
   
   # Line 86: Email password for tests
-  EMAIL_PASS: ${{ secrets.SMTP_PASS }}
+  SMTP_PASS: ${{ secrets.SMTP_PASS }}
   
   # Lines 93-96: AWS credentials for tests
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

@@ -51,9 +51,9 @@ API_URL: http://localhost:8080
 SMTP_HOST: smtp.gmail.com
 SMTP_PORT: 587
 SMTP_SECURE: false
-EMAIL_USER: test@example.com
-EMAIL_PASS: ${{ secrets.SMTP_PASS }}
-EMAIL_FROM: noreply@medconnecter.com
+SMTP_USER: test@example.com
+SMTP_PASS: ${{ secrets.SMTP_PASS }}
+SMTP_FROM: noreply@medconnecter.com
 SMS_PROVIDER: twilio
 SMS_API_KEY: test-sms-api-key
 SMS_FROM: +1234567890
@@ -93,7 +93,7 @@ MONGODB_URI: ${{ secrets.MONGODB_URI_TEST || 'mongodb://localhost:27017/med-conn
   "SMTP_HOST": "smtp.gmail.com",
   "SMTP_PORT": "587",
   "SMTP_SECURE": "false",
-  "EMAIL_FROM": "noreply@medconnecter.com",
+          "SMTP_FROM": "noreply@medconnecter.com",
   "SMS_PROVIDER": "twilio",
   "SMS_FROM": "+1234567890",
   "BIG_REGISTER_API_URL": "https://api.bigregister.nl/v1",

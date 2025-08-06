@@ -20,7 +20,7 @@ const validateAWSConfig = () => {
     throw new Error('AWS_BUCKET is required');
   }
   if (!config.email?.from) {
-    throw new Error('EMAIL_FROM is required for SES');
+    throw new Error('SMTP_FROM is required for SES');
   }
 };
 

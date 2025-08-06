@@ -188,7 +188,7 @@ jobs:
         echo "SMTP_HOST: smtp.gmail.com"
         echo "SMTP_PORT: 465"
         echo "SMTP_SECURE: true"
-        echo "EMAIL_FROM: medconnecter@gmail.com"
+        echo "SMTP_FROM: medconnecter@gmail.com"
         echo "SMS_PROVIDER: twilio"
         echo "SMS_FROM: +1234567890"
         echo "BIG_REGISTER_API_URL: https://api.bigregister.nl/v1"
@@ -204,7 +204,7 @@ jobs:
         printf "MONGODB_URI: %s\n" "${{ secrets.MONGODB_URI_TEST }}"
         printf "JWT_SECRET: %s\n" "${{ secrets.JWT_SECRET }}"
         printf "SMTP_USER: %s\n" "${{ secrets.SMTP_USER }}"
-        printf "EMAIL_PASS: %s\n" "${{ secrets.SMTP_PASS }}"
+        printf "SMTP_PASS: %s\n" "${{ secrets.SMTP_PASS }}"
         printf "AWS_ACCESS_KEY_ID: %s\n" "${{ secrets.AWS_ACCESS_KEY_ID }}"
         printf "AWS_SECRET_ACCESS_KEY: %s\n" "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
         printf "AWS_S3_BUCKET_NAME: %s\n" "${{ secrets.AWS_S3_BUCKET_NAME }}"
@@ -243,7 +243,7 @@ jobs:
             --cluster ${{ env.ECS_CLUSTER }} \
             --service-name ${{ env.ECS_SERVICE }} \
             --task-definition med-connecter:1 \
-            --desired-count 2 \
+            --desired-count 1 \
             --launch-type FARGATE \
             --network-configuration "awsvpcConfiguration={subnets=[${SUBNET_IDS}],securityGroups=[${SECURITY_GROUP_ID}],assignPublicIp=ENABLED}" \
             --region ${{ secrets.AWS_REGION }}
