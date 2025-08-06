@@ -123,7 +123,7 @@ create_iam_roles() {
         
         aws iam put-role-policy \
             --role-name ecsTaskRole-med-connecter \
-            --policy-name S3AccessPolicy \
+            --policy-name ApplicationPermissions \
             --policy-document "{
                 \"Version\": \"2012-10-17\",
                 \"Statement\": [
@@ -139,6 +139,17 @@ create_iam_roles() {
                             \"arn:aws:s3:::med-connecter-*\",
                             \"arn:aws:s3:::med-connecter-*/*\"
                         ]
+                    },
+                    {
+                        \"Effect\": \"Allow\",
+                        \"Action\": [
+                            \"ssm:UpdateInstanceInformation\",
+                            \"ssmmessages:CreateControlChannel\",
+                            \"ssmmessages:CreateDataChannel\",
+                            \"ssmmessages:OpenControlChannel\",
+                            \"ssmmessages:OpenDataChannel\"
+                        ],
+                        \"Resource\": \"*\"
                     }
                 ]
             }"

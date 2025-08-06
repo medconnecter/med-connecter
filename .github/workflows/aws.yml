@@ -117,30 +117,44 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-    - name: Get AWS Account ID
+    - name: Get AWS Account ID and Build API URL
       id: account-id
       run: |
         ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
         echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+        
+        # Build API URL
+        API_URL="http://med-connecter-alb-${ACCOUNT_ID}.${{ secrets.AWS_REGION }}.elb.amazonaws.com"
+        echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+        echo "API URL: $API_URL"
 
     - name: Fill in the new image ID and replace placeholders in the Amazon ECS task definition
       id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: ${{ env.ECS_TASK_DEFINITION }}
-        container-name: ${{ env.CONTAINER_NAME }}
-        image: ${{ steps.build-image.outputs.image }}
-        substitutions: |
-          AWS_ACCOUNT_ID=${{ steps.account-id.outputs.account_id }}
-          AWS_REGION=${{ secrets.AWS_REGION }}
-          MONGODB_URI=${{ secrets.MONGODB_URI_TEST }}
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          SMTP_USER=${{ secrets.SMTP_USER }}
-          SMTP_PASS=${{ secrets.SMTP_PASS }}
-          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_S3_BUCKET_NAME=${{ secrets.AWS_S3_BUCKET_NAME }}
-          API_URL=http://med-connecter-alb-{{ steps.account-id.outputs.account_id }}.{{ secrets.AWS_REGION }}.elb.amazonaws.com
+      run: |
+        echo "🔧 Replacing placeholders in task definition..."
+        
+        # Create a copy of the task definition
+        cp ${{ env.ECS_TASK_DEFINITION }} task-definition-rendered.json
+        
+        # Replace placeholders using sed
+        sed -i "s/{{AWS_ACCOUNT_ID}}/${{ steps.account-id.outputs.account_id }}/g" task-definition-rendered.json
+        sed -i "s/{{AWS_REGION}}/${{ secrets.AWS_REGION }}/g" task-definition-rendered.json
+        sed -i "s/{{MONGODB_URI}}/${{ secrets.MONGODB_URI_TEST }}/g" task-definition-rendered.json
+        sed -i "s/{{JWT_SECRET}}/${{ secrets.JWT_SECRET }}/g" task-definition-rendered.json
+        sed -i "s/{{SMTP_USER}}/${{ secrets.SMTP_USER }}/g" task-definition-rendered.json
+        sed -i "s/{{SMTP_PASS}}/${{ secrets.SMTP_PASS }}/g" task-definition-rendered.json
+        sed -i "s/{{AWS_ACCESS_KEY_ID}}/${{ secrets.AWS_ACCESS_KEY_ID }}/g" task-definition-rendered.json
+        sed -i "s/{{AWS_SECRET_ACCESS_KEY}}/${{ secrets.AWS_SECRET_ACCESS_KEY }}/g" task-definition-rendered.json
+        sed -i "s/{{AWS_S3_BUCKET_NAME}}/${{ secrets.AWS_S3_BUCKET_NAME }}/g" task-definition-rendered.json
+        sed -i "s|{{API_URL}}|${{ steps.account-id.outputs.api_url }}|g" task-definition-rendered.json
+        
+        # Replace the image
+        sed -i "s|{{AWS_ACCOUNT_ID}}.dkr.ecr.{{AWS_REGION}}.amazonaws.com/med-connecter:latest|${{ steps.build-image.outputs.image }}|g" task-definition-rendered.json
+        
+        echo "✅ Task definition rendered successfully"
+        
+        # Output the rendered task definition for the next step
+        echo "task-definition=$(pwd)/task-definition-rendered.json" >> $GITHUB_OUTPUT
 
     - name: Print All Environment Variables (DEBUG - REMOVE LATER)
       run: |
@@ -152,10 +166,10 @@ jobs:
         echo "FRONTEND_URL: https://your-frontend-domain.com"
         echo "LOG_LEVEL: info"
         echo "SWAGGER_ENABLED: true"
-        echo "API_URL: https://your-api-domain.com"
+        printf "API_URL: %s\n" "${{ steps.account-id.outputs.api_url }}"
         echo "SMTP_HOST: smtp.gmail.com"
         echo "SMTP_PORT: 465"
-        echo "SMTP_SECURE: false"
+        echo "SMTP_SECURE: true"
         echo "EMAIL_FROM: medconnecter@gmail.com"
         echo "SMS_PROVIDER: twilio"
         echo "SMS_FROM: +1234567890"
@@ -204,7 +218,7 @@ jobs:
           SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=${VPC_ID}" "Name=group-name,Values=default" --query 'SecurityGroups[0].GroupId' --output text --region ${{ secrets.AWS_REGION }})
           
           # Register task definition
-          aws ecs register-task-definition --cli-input-json ${{ steps.task-def.outputs.task-definition }} --region ${{ secrets.AWS_REGION }}
+          aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task-definition }} --region ${{ secrets.AWS_REGION }}
           
           # Create service
           aws ecs create-service \
