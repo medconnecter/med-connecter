@@ -27,11 +27,9 @@
 name: Deploy Med Connecter to Amazon ECS
 
 on:
-  workflow_run:
-    workflows: ["Node.js CI/CD"]
-    types:
-      - completed
+  push:
     branches: [ "main" ]
+  workflow_dispatch:
 
 # Prevent concurrent deployments
 concurrency:
@@ -121,13 +119,31 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 30
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Check Node.js workflow status
+      id: check-workflow
+      run: |
+        # Get the latest workflow run for Node.js CI/CD
+        WORKFLOW_RUNS=$(curl -s -H "Authorization: token ${{ github.token }}" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/workflows/node.js.yml/runs?branch=${{ github.ref_name }}&per_page=1")
+        
+        # Extract the conclusion
+        CONCLUSION=$(echo "$WORKFLOW_RUNS" | jq -r '.workflow_runs[0].conclusion')
+        
+        if [ "$CONCLUSION" = "success" ]; then
+          echo "✅ Node.js workflow passed"
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Node.js workflow failed or is still running"
+          echo "should_deploy=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Configure AWS credentials
+      if: steps.check-workflow.outputs.should_deploy == 'true'
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -135,6 +151,7 @@ jobs:
         aws-region: ${{ secrets.AWS_REGION }}
 
     - name: Validate task definition
+      if: steps.check-workflow.outputs.should_deploy == 'true'
       run: |
         echo "🔍 Validating task definition..."
         if [ ! -f "${{ env.ECS_TASK_DEFINITION }}" ]; then
@@ -153,10 +170,12 @@ jobs:
         fi
 
     - name: Login to Amazon ECR
+      if: steps.check-workflow.outputs.should_deploy == 'true'
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
     - name: Build, tag, and push image to Amazon ECR
+      if: steps.check-workflow.outputs.should_deploy == 'true'
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -170,12 +189,14 @@ jobs:
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
     - name: Get AWS Account ID
+      if: steps.check-workflow.outputs.should_deploy == 'true'
       id: account-id
       run: |
         ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
         echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
 
     - name: Fill in the new image ID and replace placeholders in the Amazon ECS task definition
+      if: steps.check-workflow.outputs.should_deploy == 'true'
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
@@ -187,6 +208,7 @@ jobs:
           AWS_REGION=${{ secrets.AWS_REGION }}
 
     - name: Deploy Amazon ECS task definition
+      if: steps.check-workflow.outputs.should_deploy == 'true'
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
@@ -196,6 +218,7 @@ jobs:
         wait-for-minutes: 10
 
     - name: Verify deployment
+      if: steps.check-workflow.outputs.should_deploy == 'true'
       run: |
         echo "✅ Deployment completed successfully!"
         echo "🔍 Checking service status..."
