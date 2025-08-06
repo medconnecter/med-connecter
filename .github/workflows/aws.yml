@@ -141,6 +141,47 @@ jobs:
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_S3_BUCKET_NAME=${{ secrets.AWS_S3_BUCKET_NAME }}
 
+    - name: Print All Environment Variables (DEBUG - REMOVE LATER)
+      run: |
+        echo "🔍 DEBUG: All Environment Variables that will be used in the container:"
+        echo ""
+        echo "📋 Task Definition Environment Variables:"
+        echo "NODE_ENV: production"
+        echo "PORT: 8080"
+        echo "FRONTEND_URL: https://your-frontend-domain.com"
+        echo "LOG_LEVEL: info"
+        echo "SWAGGER_ENABLED: true"
+        echo "API_URL: https://your-api-domain.com"
+        echo "SMTP_HOST: smtp.gmail.com"
+        echo "SMTP_PORT: 587"
+        echo "SMTP_SECURE: false"
+        echo "EMAIL_FROM: medconnecter@gmail.com"
+        echo "SMS_PROVIDER: twilio"
+        echo "SMS_FROM: +1234567890"
+        echo "BIG_REGISTER_API_URL: https://api.bigregister.nl/v1"
+        echo "VIDEO_CALL_PROVIDER: twilio"
+        echo "CLOUD_STORAGE_PROVIDER: aws"
+        echo "ENABLE_EMAIL_NOTIFICATIONS: true"
+        echo "ENABLE_SMS_NOTIFICATIONS: true"
+        echo "ENABLE_PUSH_NOTIFICATIONS: true"
+        echo "CORS_ORIGIN: https://your-frontend-domain.com"
+        echo ""
+        echo "🔐 Sensitive Environment Variables (ACTUAL VALUES):"
+        echo "MONGODB_URI: ${{ secrets.MONGODB_URI_TEST }}"
+        echo "JWT_SECRET: ${{ secrets.JWT_SECRET }}"
+        echo "SMTP_USER: ${{ secrets.SMTP_USER }}"
+        echo "EMAIL_PASS: ${{ secrets.SMTP_PASS }}"
+        echo "AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}"
+        echo "AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+        echo "AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}"
+        echo "AWS_REGION: ${{ secrets.AWS_REGION }}"
+        echo ""
+        echo "📦 Container Image: ${{ steps.build-image.outputs.image }}"
+        echo "🏗️ AWS Account ID: ${{ steps.account-id.outputs.account_id }}"
+        echo "🌍 AWS Region: ${{ secrets.AWS_REGION }}"
+        echo ""
+        echo "⚠️  WARNING: This step prints sensitive information for debugging. REMOVE AFTER DEBUGGING!"
+
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
