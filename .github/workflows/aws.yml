@@ -153,8 +153,8 @@ jobs:
         perl -pi -e 's/\{\{AWS_S3_BUCKET_NAME\}\}/$ENV{AWS_S3_BUCKET_NAME}/g' task-definition-rendered.json
         perl -pi -e 's/\{\{API_URL\}\}/$ENV{API_URL}/g' task-definition-rendered.json
         
-        # Replace the image - use a more specific pattern
-        perl -pi -e 's/med-connecter:latest/$ENV{IMAGE_TAG}/g' task-definition-rendered.json
+        # Replace the image tag placeholder
+        perl -pi -e 's/\{\{IMAGE_TAG\}\}/$ENV{IMAGE_TAG}/g' task-definition-rendered.json
         
         echo "✅ Task definition rendered successfully"
         
