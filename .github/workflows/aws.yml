@@ -73,21 +73,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Setup AWS Resources
-      env:
-        MONGODB_URI_TEST: ${{ secrets.MONGODB_URI_TEST }}
-        JWT_SECRET: ${{ secrets.JWT_SECRET }}
-        SMTP_USER: ${{ secrets.SMTP_USER }}
-        SMTP_PASS: ${{ secrets.SMTP_PASS }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-      run: |
-        echo "🔧 Setting up AWS resources..."
-        chmod +x scripts/setup-aws-resources.sh
-        ./scripts/setup-aws-resources.sh
-        echo "✅ AWS resources setup completed"
+
 
     - name: Validate task definition
       run: |
@@ -140,6 +126,13 @@ jobs:
         substitutions: |
           AWS_ACCOUNT_ID=${{ steps.account-id.outputs.account_id }}
           AWS_REGION=${{ secrets.AWS_REGION }}
+          MONGODB_URI=${{ secrets.MONGODB_URI_TEST }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASS=${{ secrets.SMTP_PASS }}
+          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET_NAME=${{ secrets.AWS_S3_BUCKET_NAME }}
 
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
