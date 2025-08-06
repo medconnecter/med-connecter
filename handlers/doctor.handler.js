@@ -32,10 +32,10 @@ class DoctorHandler {
 
       // Verify with BIG register
       const verificationResult = await BigRegisterService.verifyRegistrationNumber(registrationNumber);
-      
+
       // Find or create doctor profile using hexId
       let doctor = await Doctor.findOne({ userId });
-      
+
       logger.info('Doctor profile lookup result', {
         userId,
         doctorFound: !!doctor,
@@ -155,17 +155,17 @@ class DoctorHandler {
         doctor = new Doctor({
           userId,
           registrationNumber,
-        specializations,
-        experience,
-        consultationFee,
-        currency,
-        about,
-        education,
-        training,
-        awards,
-        publications,
-        services,
-        clinicLocation,
+          specializations,
+          experience,
+          consultationFee,
+          currency,
+          about,
+          education,
+          training,
+          awards,
+          publications,
+          services,
+          clinicLocation,
           availability,
           unavailability,
           documents,
@@ -419,7 +419,7 @@ class DoctorHandler {
       }
 
       const totalReviews = await Review.countDocuments({ doctorId: doctor._id });
-      const verifiedReviews = await Review.countDocuments({ 
+      const verifiedReviews = await Review.countDocuments({
         doctorId: doctor._id,
         isVerified: true
       });
@@ -624,12 +624,12 @@ class DoctorHandler {
   static async getAvailability (req, res) {
     try {
       const { doctorId, startDate, endDate, gender, language, minPrice, maxPrice, rating } = req.query;
-      
+
       // Validate date parameters
       if (!startDate || !endDate) {
         return res.status(400).json({ success: false, error: 'startDate and endDate are required' });
       }
-      
+
       const start = new Date(startDate);
       const end = new Date(endDate);
       if (isNaN(start) || isNaN(end) || start > end) {
@@ -637,7 +637,7 @@ class DoctorHandler {
       }
 
       let doctors = [];
-      
+
       if (doctorId) {
         // Get availability for specific doctor
         const doctor = await Doctor.findById(doctorId).populate('userId');
@@ -670,32 +670,32 @@ class DoctorHandler {
 
       for (const doctor of doctors) {
         const doctorAvailability = [];
-        
+
         for (let d = new Date(start); d <= end; d = new Date(d.getTime() + 24 * 60 * 60 * 1000)) {
           const dateStr = d.toISOString().slice(0, 10);
           const weekday = d.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
           const recurring = doctor.availability.find(a => a.day === weekday);
           let slots = recurring ? [...recurring.slots] : [];
-          
+
           const unavail = doctor.unavailability.find(u => u.date.toISOString().slice(0, 10) === dateStr);
           if (unavail) {
             slots = slots.filter(slot => !unavail.slots.some(uSlot => slot.startTime < uSlot.endTime && slot.endTime > uSlot.startTime));
           }
-          
+
           const availabilityEntry = {
             date: dateStr,
             slots
           };
-          
+
           // Add doctor info only when returning multiple doctors
           if (!doctorId) {
             availabilityEntry.doctorId = doctor._id;
             availabilityEntry.doctorName = doctor.userId && doctor.userId.firstName && doctor.userId.lastName ? `${doctor.userId.firstName} ${doctor.userId.lastName}` : '';
           }
-          
+
           doctorAvailability.push(availabilityEntry);
         }
-        
+
         allAvailability.push(...doctorAvailability);
       }
 
@@ -930,4 +930,4 @@ class DoctorHandler {
   }
 }
 
-module.exports = DoctorHandler; 
+module.exports = DoctorHandler;

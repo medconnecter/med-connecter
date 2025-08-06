@@ -3,30 +3,30 @@ const config = require('../config/config');
 
 class BigRegisterService {
   static async verifyRegistrationNumber (_registrationNumber) {
-      // TODO: Implement actual BIG-register API integration
-      // For now, we'll just validate the format
-      // if (!registrationNumber || !/^\d{9}$/.test(registrationNumber)) {
-      //   return {
-      //     isValid: false,
-      //     error: 'Invalid registration number format'
-      //   };
-      // }
+    // TODO: Implement actual BIG-register API integration
+    // For now, we'll just validate the format
+    // if (!registrationNumber || !/^\d{9}$/.test(registrationNumber)) {
+    //   return {
+    //     isValid: false,
+    //     error: 'Invalid registration number format'
+    //   };
+    // }
 
-      // // Simulate API call
-      // const response = await axios.get(`${config.bigRegisterApiUrl}/verify`, {
-      //   headers: {
-      //     'Authorization': `Bearer ${config.bigRegisterApiKey}`,
-      //     'Content-Type': 'application/json'
-      //   },
-      //   params: {
-      //     registrationNumber
-      //   }
-      // });
+    // // Simulate API call
+    // const response = await axios.get(`${config.bigRegisterApiUrl}/verify`, {
+    //   headers: {
+    //     'Authorization': `Bearer ${config.bigRegisterApiKey}`,
+    //     'Content-Type': 'application/json'
+    //   },
+    //   params: {
+    //     registrationNumber
+    //   }
+    // });
 
-      return {
-        success: true,
-        data: null
-      };
+    return {
+      success: true,
+      data: null
+    };
   }
 
   static async getSpecializations () {
