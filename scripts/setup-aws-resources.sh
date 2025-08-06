@@ -209,37 +209,29 @@ setup_networking() {
 # Function to create secrets in AWS Secrets Manager
 create_secrets() {
     echo -e "${YELLOW}🔍 Creating secrets in AWS Secrets Manager...${NC}"
-    echo -e "${YELLOW}⚠️  You'll need to update these secrets with actual values later${NC}"
     
-    # List of secrets to create
-    declare -a secrets=(
-        "mongodb-uri"
-        "jwt-secret"
-        "email-user"
-        "email-pass"
-        "sms-api-key"
-        "big-register-api-key"
-        "aws-access-key-id"
-        "aws-secret-access-key"
-        "aws-s3-bucket-name"
-        # "aws-sqs-queue-url"  # Commented out - not used in current code
-        # "aws-sns-topic-arn"  # Commented out - not used in current code
-        "video-call-api-key"
-        "video-call-api-secret"
-        "admin-email"
-        "admin-password"
-        "cloud-storage-bucket"
+    # Create secrets with proper values (only the ones actually used)
+    declare -A secret_values=(
+        ["mongodb-uri"]="${MONGODB_URI_TEST}"
+        ["jwt-secret"]="${JWT_SECRET}"
+        ["email-user"]="${SMTP_USER}"
+        ["email-pass"]="${SMTP_PASS}"
+        ["aws-access-key-id"]="${AWS_ACCESS_KEY_ID}"
+        ["aws-secret-access-key"]="${AWS_SECRET_ACCESS_KEY}"
+        ["aws-s3-bucket-name"]="${AWS_S3_BUCKET_NAME}"
     )
     
-    for secret in "${secrets[@]}"; do
+    for secret in "${!secret_values[@]}"; do
         secret_name="${PROJECT_NAME}/${secret}"
+        secret_value="${secret_values[$secret]}"
+        
         if aws secretsmanager describe-secret --secret-id "${secret_name}" --region "${REGION}" &> /dev/null; then
             echo -e "${GREEN}✅ Secret ${secret_name} already exists${NC}"
         else
             aws secretsmanager create-secret \
                 --name "${secret_name}" \
                 --description "${secret} for ${PROJECT_NAME}" \
-                --secret-string "REPLACE_WITH_ACTUAL_VALUE" \
+                --secret-string "${secret_value}" \
                 --region "${REGION}"
             echo -e "${GREEN}✅ Secret ${secret_name} created${NC}"
         fi
@@ -352,12 +344,11 @@ display_next_steps() {
     echo -e "${BLUE}🎉 AWS resources setup completed!${NC}"
     echo ""
     echo -e "${YELLOW}📋 Next steps:${NC}"
-    echo "1. Update secrets in AWS Secrets Manager with actual values"
-    echo "2. Update domain URLs in .aws/task-definition.json:"
+    echo "1. Update domain URLs in .aws/task-definition.json:"
     echo "   - FRONTEND_URL"
     echo "   - API_URL"
     echo "   - CORS_ORIGIN"
-    echo "3. Push to main branch to trigger deployment"
+    echo "2. Push to main branch to trigger deployment"
     echo ""
     echo -e "${GREEN}✅ Setup complete!${NC}"
 }
