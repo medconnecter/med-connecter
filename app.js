@@ -119,8 +119,12 @@ const swaggerOptions = {
     },
     servers: [
       {
+        url: 'http://localhost:8085/medconnecter',
+        description: 'Development server with context path'
+      },
+      {
         url: 'http://localhost:8085',
-        description: 'Development server'
+        description: 'Development server (legacy)'
       }
     ],
     components: {
@@ -154,8 +158,11 @@ Object.keys(swaggerSpec.paths).forEach(path => {
   });
 });
 
+// Create a router for the medconnecter context path
+const medconnecterRouter = express.Router();
+
 // Swagger documentation with custom options
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+medconnecterRouter.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   explorer: true,
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'Med Connecter API Documentation',
@@ -168,18 +175,18 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 // Add endpoint to get Swagger JSON
-app.get('/api-docs.json', (req, res) => {
+medconnecterRouter.get('/api-docs.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+medconnecterRouter.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Debug middleware to log API routes
-app.use((req, res, next) => {
+medconnecterRouter.use((req, res, next) => {
   if (req.path.startsWith('/api')) {
     logger.info(`API Request: ${req.method} ${req.path}`);
   }
@@ -187,22 +194,47 @@ app.use((req, res, next) => {
 });
 
 // API routes with version middleware
-app.use('/api/v1', versionMiddleware);
+medconnecterRouter.use('/api/v1', versionMiddleware);
 
 // Apply session middleware to all API routes
-app.use('/api/v1', sessionMiddleware);
+medconnecterRouter.use('/api/v1', sessionMiddleware);
 
 // Mount routes
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/users', userRoutes);
-app.use('/api/v1/doctors', doctorRoutes);
-app.use('/api/v1/appointments', appointmentRoutes);
-app.use('/api/v1/reviews', reviewRoutes);
-app.use('/api/v1/notifications', notificationRoutes);
-app.use('/api/v1/payments', paymentRoutes);
-app.use('/api/v1/chats', chatRoutes);
-app.use('/api/v1/video', videoRoutes);
-app.use('/api/v1/admin', adminRoutes);
+medconnecterRouter.use('/api/v1/auth', authRoutes);
+medconnecterRouter.use('/api/v1/users', userRoutes);
+medconnecterRouter.use('/api/v1/doctors', doctorRoutes);
+medconnecterRouter.use('/api/v1/appointments', appointmentRoutes);
+medconnecterRouter.use('/api/v1/reviews', reviewRoutes);
+medconnecterRouter.use('/api/v1/notifications', notificationRoutes);
+medconnecterRouter.use('/api/v1/payments', paymentRoutes);
+medconnecterRouter.use('/api/v1/chats', chatRoutes);
+medconnecterRouter.use('/api/v1/video', videoRoutes);
+medconnecterRouter.use('/api/v1/admin', adminRoutes);
+
+// Mount the medconnecter router under /medconnecter path
+app.use('/medconnecter', medconnecterRouter);
+
+// Also keep the root paths for backward compatibility
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  explorer: true,
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Med Connecter API Documentation',
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    filter: true,
+    tryItOutEnabled: true
+  }
+}));
+
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 app.use(AuthMiddleware.blockDeactivated);
 // Error handling middleware
