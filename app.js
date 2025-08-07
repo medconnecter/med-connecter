@@ -232,10 +232,8 @@ medconnecterRouter.use((req, res, next) => {
   next();
 });
 
-// API routes with version middleware
+medconnecterRouter.use('/api/v1', AuthMiddleware.blockDeactivated);
 medconnecterRouter.use('/api/v1', versionMiddleware);
-
-// Apply session middleware to all API routes
 medconnecterRouter.use('/api/v1', sessionMiddleware);
 
 // Mount routes
@@ -253,6 +251,11 @@ medconnecterRouter.use('/api/v1/admin', adminRoutes);
 // Mount the medconnecter router under /medconnecter path
 app.use('/medconnecter', medconnecterRouter);
 
+// Health check at root for ALB
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Add a catch-all route for debugging
 app.use('*', (req, res, next) => {
   logger.info(`Catch-all route hit: ${req.method} ${req.originalUrl}`);
@@ -260,7 +263,7 @@ app.use('*', (req, res, next) => {
   next();
 });
 
-app.use(AuthMiddleware.blockDeactivated);
+
 // Error handling middleware
 app.use(errorHandler);
 
