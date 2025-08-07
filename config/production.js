@@ -29,7 +29,7 @@ module.exports = {
         },
         servers: [
           {
-            url: process.env.API_URL ? `${process.env.API_URL}/medconnecter` : 'https://med-connecter-alb-1852861701.eu-north-1.elb.amazonaws.com/medconnecter',
+            url: 'http://med-connecter-alb-1852861701.eu-north-1.elb.amazonaws.com/medconnecter',
             description: 'Production server'
           }
         ],
