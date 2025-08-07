@@ -2,9 +2,9 @@ const axios = require('axios');
 
 const BASE_URL = process.env.TEST_URL || 'http://localhost:8085';
 
-async function testEndpoints() {
+async function testEndpoints () {
   console.log('Testing Med Connecter API endpoints...\n');
-  
+
   const endpoints = [
     '/medconnecter',
     '/medconnecter/health',
@@ -12,7 +12,7 @@ async function testEndpoints() {
     '/medconnecter/api-docs',
     '/medconnecter/api-docs.json'
   ];
-  
+
   for (const endpoint of endpoints) {
     try {
       console.log(`Testing: ${endpoint}`);
@@ -20,10 +20,10 @@ async function testEndpoints() {
         timeout: 5000,
         validateStatus: () => true // Don't throw on any status code
       });
-      
+
       console.log(`  Status: ${response.status}`);
       console.log(`  Content-Type: ${response.headers['content-type']}`);
-      
+
       if (response.status === 200) {
         if (response.headers['content-type']?.includes('application/json')) {
           console.log(`  Response: ${JSON.stringify(response.data, null, 2).substring(0, 200)}...`);

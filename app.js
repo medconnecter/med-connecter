@@ -97,14 +97,14 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     const allowedOrigins = [
       'http://localhost:8085',
       'http://127.0.0.1:8085',
       'https://med-connecter-alb-1852861701.eu-north-1.elb.amazonaws.com',
       'http://med-connecter-alb-1852861701.eu-north-1.elb.amazonaws.com'
     ];
-    
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -165,7 +165,7 @@ if (config.get('swagger.enabled')) {
       tryItOutEnabled: true
     }
   }));
-  
+
   // Add endpoint to get Swagger JSON
   medconnecterRouter.get('/api-docs.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -252,7 +252,7 @@ app.use('/medconnecter', medconnecterRouter);
 // Add a catch-all route for debugging
 app.use('*', (req, res, next) => {
   logger.info(`Catch-all route hit: ${req.method} ${req.originalUrl}`);
-  logger.info(`Request headers:`, req.headers);
+  logger.info('Request headers:', req.headers);
   next();
 });
 
