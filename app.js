@@ -36,7 +36,7 @@ const videoRoutes = require('./routes/video.routes');
 const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
-
+app.set('trust proxy', true);
 // Debug middleware to log all requests
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.originalUrl}`);
@@ -80,15 +80,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan('combined'));
 
 // Disable Helmet for development
-if (process.env.NODE_ENV === 'production') {
-  app.use(helmet());
-} else {
-  app.use(helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-    crossOriginEmbedderPolicy: false,
-    contentSecurityPolicy: false
-  }));
-}
+
 
 app.use(compression());
 
@@ -193,6 +185,10 @@ if (config.get('swagger.enabled')) {
     });
   });
 }
+
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
 
 // Add debugging route for API docs
 medconnecterRouter.get('/api-docs-debug', (req, res) => {
