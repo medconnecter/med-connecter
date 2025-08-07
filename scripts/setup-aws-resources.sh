@@ -280,11 +280,6 @@ create_load_balancer() {
             --port 8080 \
             --vpc-id "${VPC_ID}" \
             --target-type ip \
-            --health-check-path /medconnecter/health \
-            --health-check-interval-seconds 30 \
-            --health-check-timeout-seconds 5 \
-            --healthy-threshold-count 2 \
-            --unhealthy-threshold-count 2 \
             --region "${REGION}" \
             --query 'TargetGroups[0].TargetGroupArn' \
             --output text)
@@ -356,7 +351,6 @@ create_load_balancer() {
     echo "${ALB_DNS_NAME}" > .alb-dns-name
     echo -e "${BLUE}📋 ALB DNS Name: ${ALB_DNS_NAME}${NC}"
     echo -e "${BLUE}📋 Swagger URL: http://${ALB_DNS_NAME}/medconnecter/api-docs${NC}"
-    echo -e "${BLUE}📋 Health Check: http://${ALB_DNS_NAME}/medconnecter/health${NC}"
     echo ""
 }
 
@@ -493,8 +487,6 @@ display_next_steps() {
         ALB_DNS_NAME=$(cat .alb-dns-name)
         echo -e "${GREEN}🌐 Load Balancer DNS: ${ALB_DNS_NAME}${NC}"
         echo -e "${GREEN}📚 Swagger Documentation: http://${ALB_DNS_NAME}/medconnecter/api-docs${NC}"
-        echo -e "${GREEN}🏥 Health Check: http://${ALB_DNS_NAME}/medconnecter/health${NC}"
-        echo -e "${GREEN}🔗 API Base URL: http://${ALB_DNS_NAME}/medconnecter/api/v1${NC}"
         echo ""
     fi
     
