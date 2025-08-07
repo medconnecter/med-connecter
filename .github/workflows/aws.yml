@@ -215,7 +215,11 @@ jobs:
         printf "🌍 AWS Region: %s\n" "${{ secrets.AWS_REGION }}"
         echo ""
         echo "⚠️  WARNING: This step prints sensitive information for debugging. REMOVE AFTER DEBUGGING!"
-
+    - name: Print rendered task definition (task-definition-rendered.json)
+      run: |
+        echo "🔍 Contents of the rendered ECS task definition file:"
+        cat task-definition-rendered.json
+        
     - name: Check ECS Service Status
       run: |
         echo "🔍 Checking ECS service status..."

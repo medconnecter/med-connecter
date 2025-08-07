@@ -453,14 +453,19 @@ create_ecs_service() {
         
         # Register task definition first
         echo -e "${YELLOW}Registering task definition...${NC}"
-        aws ecs register-task-definition --cli-input-json file://.aws/task-definition.json --region "${REGION}"
+        TASK_DEF=$(aws ecs register-task-definition \
+            --cli-input-json file://.aws/task-definition.json \
+            --region "${REGION}" \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+        echo -e "${GREEN}✅ Task definition registered: ${TASK_DEF}${NC}"
         
         # Create service with load balancer
         echo -e "${YELLOW}Creating ECS service with load balancer...${NC}"
         aws ecs create-service \
             --cluster "${CLUSTER_NAME}" \
             --service-name "${SERVICE_NAME}" \
-            --task-definition "${PROJECT_NAME}:1" \
+            --task-definition "${TASK_DEF}" \
             --desired-count 1 \
             --launch-type FARGATE \
             --network-configuration "awsvpcConfiguration={subnets=[${SUBNET_IDS}],securityGroups=[${SECURITY_GROUP_ID}],assignPublicIp=ENABLED}" \
