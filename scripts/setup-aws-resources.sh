@@ -516,9 +516,9 @@ main() {
     create_s3_bucket
     # create_sqs_queue  # Commented out - not used in current code
     # create_sns_topic  # Commented out - not used in current code
-    update_task_definition
-    create_ecs_service
-    display_next_steps
+    # update_task_definition
+    # create_ecs_service
+    # display_next_steps
 }
 
 # Run main function
