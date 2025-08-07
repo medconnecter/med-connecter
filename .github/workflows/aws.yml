@@ -232,7 +232,7 @@ jobs:
         
         echo "Service status: $SERVICE_STATUS"
         
-        if [ "$SERVICE_STATUS" = "NONEXISTENT" ]; then
+        if [ "$SERVICE_STATUS" = "NONEXISTENT" ] || [ "$SERVICE_STATUS" = "INACTIVE" ]; then
           echo "❌ Service does not exist. Creating it now..."
           # Get subnet IDs
           VPC_ID=$(aws ec2 describe-vpcs --filters "Name=is-default,Values=true" --query 'Vpcs[0].VpcId' --output text --region ${{ secrets.AWS_REGION }})
