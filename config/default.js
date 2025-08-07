@@ -51,7 +51,7 @@ module.exports = {
         ],
         tags: [
           {
-            name: 'Auth',
+            name: 'Authentication',
             description: 'Authentication and authorization endpoints'
           },
           {
