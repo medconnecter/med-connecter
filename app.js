@@ -102,12 +102,21 @@ const corsOptions = {
       'http://localhost:8085',
       'http://127.0.0.1:8085',
       'https://med-connecter-alb-1852861701.eu-north-1.elb.amazonaws.com',
-      'http://med-connecter-alb-1852861701.eu-north-1.elb.amazonaws.com'
-    ];
+      'http://med-connecter-alb-1852861701.eu-north-1.elb.amazonaws.com',
+      // Add dynamic origins based on environment
+      process.env.CORS_ORIGIN,
+      process.env.FRONTEND_URL
+    ].filter(Boolean); // Remove undefined values
+
+    // In development, be more permissive
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
 
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      logger.warn(`CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },

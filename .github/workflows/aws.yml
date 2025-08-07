@@ -273,3 +273,34 @@ jobs:
           --services ${{ env.ECS_SERVICE }} \
           --query 'services[0].status' \
           --output text
+
+    - name: Wait for service to be ready
+      run: |
+        echo "⏳ Waiting for service to be ready..."
+        sleep 60
+        
+        # Get the load balancer DNS name
+        SERVICE_ARN=$(aws ecs describe-services \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --services ${{ env.ECS_SERVICE }} \
+          --query 'services[0].serviceArn' \
+          --output text)
+        
+        echo "Service ARN: $SERVICE_ARN"
+        
+        # Wait for tasks to be running
+        aws ecs wait services-stable \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --services ${{ env.ECS_SERVICE }}
+
+    - name: Test endpoints
+      run: |
+        echo "🧪 Testing endpoints..."
+        
+        # Set the test base URL
+        export TEST_BASE_URL="${{ steps.account-id.outputs.api_url }}"
+        
+        # Run the test script
+        node test-endpoints.js
+        
+        echo "✅ Endpoint testing completed!"

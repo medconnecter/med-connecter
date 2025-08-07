@@ -87,7 +87,7 @@ module.exports = {
           }
         ]
       },
-      apis: ['./routes/*.js']
+      apis: ['./routes/*.js', './docs/swagger.js']
     }
   }
 };

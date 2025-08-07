@@ -88,7 +88,7 @@ module.exports = {
           }
         ]
       },
-      apis: ['./routes/*.js'] // Path to the API docs
+      apis: ['./routes/*.js', './docs/swagger.js'] // Path to the API docs
     }
   }
 };
