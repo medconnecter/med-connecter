@@ -120,11 +120,7 @@ const swaggerOptions = {
     servers: [
       {
         url: 'http://localhost:8085/medconnecter',
-        description: 'Development server with context path'
-      },
-      {
-        url: 'http://localhost:8085',
-        description: 'Development server (legacy)'
+        description: 'Development server'
       }
     ],
     components: {
@@ -214,28 +210,6 @@ medconnecterRouter.use('/api/v1/admin', adminRoutes);
 // Mount the medconnecter router under /medconnecter path
 app.use('/medconnecter', medconnecterRouter);
 
-// Also keep the root paths for backward compatibility
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  explorer: true,
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Med Connecter API Documentation',
-  swaggerOptions: {
-    persistAuthorization: true,
-    displayRequestDuration: true,
-    filter: true,
-    tryItOutEnabled: true
-  }
-}));
-
-app.get('/api-docs.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(swaggerSpec);
-});
-
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
 app.use(AuthMiddleware.blockDeactivated);
 // Error handling middleware
 app.use(errorHandler);
@@ -254,7 +228,9 @@ const PORT = process.env.PORT || 8085;
 logger.info(`Attempting to start server on port ${PORT}`);
 app.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
-  logger.info(`Swagger documentation available at http://localhost:${PORT}/api-docs`);
+  logger.info(`Swagger documentation available at http://localhost:${PORT}/medconnecter/api-docs`);
+  logger.info(`Health check available at http://localhost:${PORT}/medconnecter/health`);
+  logger.info(`API base URL: http://localhost:${PORT}/medconnecter/api/v1`);
 });
 
 // Handle uncaught exceptions

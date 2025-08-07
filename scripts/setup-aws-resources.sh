@@ -328,13 +328,22 @@ create_load_balancer() {
         ALB_DNS_NAME=$(aws elbv2 describe-load-balancers --load-balancer-arns "${ALB_ARN}" --region "${REGION}" --query 'LoadBalancers[0].DNSName' --output text)
         echo -e "${GREEN}✅ Load balancer DNS: ${ALB_DNS_NAME}${NC}"
         
-        # Create listener
-        echo -e "${YELLOW}Creating ALB listener...${NC}"
+        # Create listener with path-based routing
+        echo -e "${YELLOW}Creating ALB listener with path-based routing...${NC}"
         aws elbv2 create-listener \
             --load-balancer-arn "${ALB_ARN}" \
             --protocol HTTP \
             --port 80 \
             --default-actions Type=forward,TargetGroupArn="${TARGET_GROUP_ARN}" \
+            --region "${REGION}"
+        
+        # Create path-based routing rule for /medconnecter
+        echo -e "${YELLOW}Creating path-based routing rule for /medconnecter...${NC}"
+        aws elbv2 create-rule \
+            --listener-arn $(aws elbv2 describe-listeners --load-balancer-arn "${ALB_ARN}" --region "${REGION}" --query 'Listeners[0].ListenerArn' --output text) \
+            --priority 1 \
+            --conditions Field=path-pattern,Values="/medconnecter/*" \
+            --actions Type=forward,TargetGroupArn="${TARGET_GROUP_ARN}" \
             --region "${REGION}"
         
         echo -e "${GREEN}✅ ALB listener created${NC}"
