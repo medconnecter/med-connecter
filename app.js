@@ -94,7 +94,23 @@ app.use(compression());
 
 // CORS configuration
 const corsOptions = {
-  origin: ['http://localhost:8085', 'http://127.0.0.1:8085'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:8085',
+      'http://127.0.0.1:8085',
+      'https://med-connecter-alb-1852861701.eu-north-1.elb.amazonaws.com',
+      'http://med-connecter-alb-1852861701.eu-north-1.elb.amazonaws.com'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-session-id'],
   credentials: true,
@@ -102,47 +118,20 @@ const corsOptions = {
 };
 
 // Apply CORS middleware
-app.use(cors());
+app.use(cors(corsOptions));
 
 // Swagger configuration
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'Med Connecter API',
-      version: '1.0.0',
-      description: 'API documentation for Med Connecter',
-      contact: {
-        name: 'API Support',
-        email: 'support@medconnecter.com'
-      }
-    },
-    servers: [
-      {
-        url: 'http://localhost:8085/medconnecter',
-        description: 'Development server'
-      }
-    ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-          description: 'Enter your JWT token in the format: Bearer <token>'
-        }
-      }
-    },
-    security: [
-      {
-        bearerAuth: []
-      }
-    ]
-  },
-  apis: ['./routes/*.js'] // Path to the API docs
-};
+const swaggerOptions = config.get('swagger.options');
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+// Debug Swagger spec generation
+logger.info('Swagger spec generated:', {
+  paths: Object.keys(swaggerSpec.paths || {}),
+  totalPaths: Object.keys(swaggerSpec.paths || {}).length,
+  hasComponents: !!swaggerSpec.components,
+  hasSecurity: !!swaggerSpec.security
+});
 
 // Add custom operation filter to ensure bearer auth is included
 Object.keys(swaggerSpec.paths).forEach(path => {
@@ -157,28 +146,78 @@ Object.keys(swaggerSpec.paths).forEach(path => {
 // Create a router for the medconnecter context path
 const medconnecterRouter = express.Router();
 
-// Swagger documentation with custom options
-medconnecterRouter.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  explorer: true,
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Med Connecter API Documentation',
-  swaggerOptions: {
-    persistAuthorization: true,
-    displayRequestDuration: true,
-    filter: true,
-    tryItOutEnabled: true
-  }
-}));
+// Add debugging middleware to log all requests to medconnecter router
+medconnecterRouter.use((req, res, next) => {
+  logger.info(`MedConnecter Router: ${req.method} ${req.path}`);
+  next();
+});
 
-// Add endpoint to get Swagger JSON
-medconnecterRouter.get('/api-docs.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(swaggerSpec);
+// Swagger documentation with custom options
+if (config.get('swagger.enabled')) {
+  medconnecterRouter.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Med Connecter API Documentation',
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+      tryItOutEnabled: true
+    }
+  }));
+  
+  // Add endpoint to get Swagger JSON
+  medconnecterRouter.get('/api-docs.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
+} else {
+  logger.warn('Swagger documentation is disabled');
+  medconnecterRouter.get('/api-docs', (req, res) => {
+    res.status(404).json({
+      status: 'error',
+      message: 'API documentation is disabled',
+      availableEndpoints: {
+        health: '/medconnecter/health',
+        api: '/medconnecter/api/v1'
+      }
+    });
+  });
+}
+
+// Add debugging route for API docs
+medconnecterRouter.get('/api-docs-debug', (req, res) => {
+  logger.info('API docs debug route hit');
+  res.json({
+    message: 'API docs debug endpoint',
+    swaggerEnabled: config.get('swagger.enabled'),
+    swaggerSpec: !!swaggerSpec,
+    paths: Object.keys(swaggerSpec.paths || {}),
+    availableRoutes: [
+      '/medconnecter/api-docs',
+      '/medconnecter/api-docs.json',
+      '/medconnecter/health',
+      '/medconnecter/api/v1'
+    ]
+  });
 });
 
 // Health check endpoint
 medconnecterRouter.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Root endpoint for medconnecter
+medconnecterRouter.get('/', (req, res) => {
+  res.json({
+    message: 'Med Connecter API',
+    version: '1.0.0',
+    endpoints: {
+      apiDocs: '/medconnecter/api-docs',
+      health: '/medconnecter/health',
+      api: '/medconnecter/api/v1'
+    }
+  });
 });
 
 // Debug middleware to log API routes
@@ -210,6 +249,13 @@ medconnecterRouter.use('/api/v1/admin', adminRoutes);
 // Mount the medconnecter router under /medconnecter path
 app.use('/medconnecter', medconnecterRouter);
 
+// Add a catch-all route for debugging
+app.use('*', (req, res, next) => {
+  logger.info(`Catch-all route hit: ${req.method} ${req.originalUrl}`);
+  logger.info(`Request headers:`, req.headers);
+  next();
+});
+
 app.use(AuthMiddleware.blockDeactivated);
 // Error handling middleware
 app.use(errorHandler);
@@ -219,7 +265,12 @@ app.use((req, res, next) => {
   logger.warn(`404 Not Found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({
     status: 'error',
-    message: `Cannot ${req.method} ${req.originalUrl}`
+    message: `Cannot ${req.method} ${req.originalUrl}`,
+    availableEndpoints: {
+      apiDocs: '/medconnecter/api-docs',
+      health: '/medconnecter/health',
+      api: '/medconnecter/api/v1'
+    }
   });
 });
 

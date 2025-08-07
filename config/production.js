@@ -14,37 +14,80 @@ module.exports = {
   },
   swagger: {
     enabled: process.env.SWAGGER_ENABLED === 'true',
-    path: '/api-docs',
+    path: '/medconnecter/api-docs',
     options: {
       definition: {
         openapi: '3.0.0',
         info: {
-          title: 'Zorg Connect API',
+          title: 'Med Connecter API',
           version: '1.0.0',
-          description: 'Production API documentation for Zorg Connect platform',
+          description: 'Production API documentation for Med Connecter platform',
           contact: {
             name: 'API Support',
-            email: 'support@zorgconnect.nl'
+            email: 'support@medconnecter.com'
           }
         },
         servers: [
           {
-            url: process.env.API_URL,
+            url: process.env.API_URL ? `${process.env.API_URL}/medconnecter` : 'https://med-connecter-alb-1852861701.eu-north-1.elb.amazonaws.com/medconnecter',
             description: 'Production server'
           }
         ],
+        components: {
+          securitySchemes: {
+            bearerAuth: {
+              type: 'http',
+              scheme: 'bearer',
+              bearerFormat: 'JWT',
+              description: 'Enter your JWT token in the format: Bearer <token>'
+            }
+          }
+        },
+        security: [
+          {
+            bearerAuth: []
+          }
+        ],
         tags: [
+          {
+            name: 'Auth',
+            description: 'Authentication and authorization endpoints'
+          },
+          {
+            name: 'Users',
+            description: 'User management endpoints'
+          },
+          {
+            name: 'Doctors',
+            description: 'Doctor management endpoints'
+          },
+          {
+            name: 'Appointments',
+            description: 'Appointment management endpoints'
+          },
+          {
+            name: 'Reviews',
+            description: 'Doctor review management endpoints'
+          },
           {
             name: 'Recommendations',
             description: 'Doctor recommendation and search endpoints'
           },
           {
-            name: 'Reviews',
-            description: 'Doctor review management endpoints'
+            name: 'Payments',
+            description: 'Payment processing endpoints'
+          },
+          {
+            name: 'Notifications',
+            description: 'Notification management endpoints'
+          },
+          {
+            name: 'Admin',
+            description: 'Admin management endpoints'
           }
         ]
       },
-      apis: ['./docs/swagger/*.js']
+      apis: ['./routes/*.js']
     }
   }
 };

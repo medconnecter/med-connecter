@@ -81,7 +81,7 @@ STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
 
 ## API Documentation
 
-The API documentation is available at `http://localhost:8080/api-docs` when the server is running. The documentation includes:
+The API documentation is available at `http://localhost:8085/medconnecter/api-docs` when the server is running. The documentation includes:
 
 - Authentication endpoints
 - User management

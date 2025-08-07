@@ -100,7 +100,7 @@ git push origin main
 
 ### 3. Verify Deployment
 - Health check endpoint: `https://your-api-domain.com/health`
-- API documentation: `https://your-api-domain.com/api-docs`
+- API documentation: `https://your-api-domain.com/medconnecter/api-docs`
 
 ## 🔍 Troubleshooting
 
