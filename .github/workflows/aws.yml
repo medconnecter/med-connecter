@@ -215,18 +215,6 @@ jobs:
         printf "🌍 AWS Region: %s\n" "${{ secrets.AWS_REGION }}"
         echo ""
         echo "⚠️  WARNING: This step prints sensitive information for debugging. REMOVE AFTER DEBUGGING!"
-    
-    - name: Register ECS task definition and set TASK_DEF_ARN
-      id: register-task-def
-      run: |
-        TASK_DEF_ARN=$(aws ecs register-task-definition \
-          --cli-input-json file://task-definition-rendered.json \
-          --region ${{ secrets.AWS_REGION }} \
-          --query 'taskDefinition.taskDefinitionArn' \
-          --output text)
-        echo "task_def_arn=$TASK_DEF_ARN" >> $GITHUB_OUTPUT
-      env:
-        AWS_REGION: ${{ secrets.AWS_REGION }}
 
     - name: Check ECS Service Status
       run: |
@@ -247,11 +235,17 @@ jobs:
           SUBNET_IDS=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=${VPC_ID}" --query 'Subnets[*].SubnetId' --output text --region ${{ secrets.AWS_REGION }} | tr '\t' ',' | sed 's/,$//')
           SECURITY_GROUP_ID=$(aws ec2 describe-security-groups --filters "Name=vpc-id,Values=${VPC_ID}" "Name=group-name,Values=default" --query 'SecurityGroups[0].GroupId' --output text --region ${{ secrets.AWS_REGION }})
           
+          TASK_DEF=$(aws ecs register-task-definition \
+              --cli-input-json file://${{ steps.task-def.outputs.task-definition }} \
+              --region ${{ secrets.AWS_REGION }} \
+              --query 'taskDefinition.taskDefinitionArn' \
+              --output text)
+          
           # Create service
           aws ecs create-service \
             --cluster ${{ env.ECS_CLUSTER }} \
             --service-name ${{ env.ECS_SERVICE }} \
-            --task-definition ${{ steps.register-task-def.outputs.task_def_arn }}  \
+            --task-definition $TASK_DEF\
             --desired-count 1 \
             --launch-type FARGATE \
             --network-configuration "awsvpcConfiguration={subnets=[${SUBNET_IDS}],securityGroups=[${SECURITY_GROUP_ID}],assignPublicIp=ENABLED}" \
@@ -267,7 +261,7 @@ jobs:
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: ${{ steps.register-task-def.outputs.task_def_arn }}
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
         service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: true
